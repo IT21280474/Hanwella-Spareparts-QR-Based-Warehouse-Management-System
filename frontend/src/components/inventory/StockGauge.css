@@ -1,0 +1,31 @@
+.gauge__track {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-3);
+  overflow: hidden;
+}
+
+.gauge__fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width var(--dur-slow) var(--ease);
+}
+
+.gauge__minimum {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--color-ink);
+  opacity: 0.45;
+}
+
+.gauge__legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: var(--text-2xs);
+  color: var(--color-muted-2);
+}

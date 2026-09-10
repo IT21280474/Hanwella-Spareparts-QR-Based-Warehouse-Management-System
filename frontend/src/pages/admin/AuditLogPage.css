@@ -1,0 +1,117 @@
+.audit {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.audit__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.audit__toolbar .search {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.audit__dates {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.audit__dates .input {
+  width: 138px;
+}
+
+.audit__dash {
+  color: var(--color-muted-2);
+}
+
+.audit__when {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.audit__who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.audit__avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-bg-3);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--color-ink-2);
+}
+
+.audit__who-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.audit__who-name {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audit__who-role {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.audit__record {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.audit__record-type {
+  font-size: var(--text-base);
+  color: var(--color-ink-2);
+}
+
+.audit__record-label {
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+}
+
+.audit__description {
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.audit__ip {
+  font-size: var(--text-xs);
+  color: var(--color-muted-2);
+}
+
+@media (max-width: 640px) {
+  .audit__dates {
+    width: 100%;
+  }
+
+  .audit__dates .input {
+    flex: 1;
+    width: auto;
+  }
+}

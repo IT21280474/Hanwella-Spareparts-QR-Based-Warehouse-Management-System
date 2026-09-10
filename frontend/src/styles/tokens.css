@@ -1,0 +1,145 @@
+/*
+ * Design tokens — the single source of colour, type, spacing and elevation.
+ * Every value here is read from the approved visual reference; components must
+ * consume these variables rather than repeating literals.
+ */
+
+:root {
+  /* ---- Colour: neutrals ------------------------------------------------ */
+  --color-ink: #14161a;         /* primary text, sidebar, dark buttons */
+  --color-ink-2: #3a4048;       /* secondary text, icon glyphs */
+  --color-muted: #6e7681;       /* meta text, table headers */
+  --color-muted-2: #9aa1ab;     /* placeholders, faint meta */
+  --color-muted-3: #9ca3ae;     /* meta on dark surfaces */
+
+  --color-line: #e3e6ea;        /* card + table borders */
+  --color-line-2: #dce0e5;      /* input borders */
+  --color-line-3: #c9ced4;      /* hovered control borders */
+
+  --color-surface: #ffffff;
+  --color-bg: #f6f7f8;
+  --color-bg-2: #fafbfb;        /* table header fill */
+  --color-bg-3: #f1f3f4;        /* neutral chips */
+  --color-bg-4: #eef0f2;        /* hover fill */
+
+  /* ---- Colour: brand --------------------------------------------------- */
+  --color-brand: #a6e635;
+  --color-brand-ink: #1a2200;
+  --color-link: #4d7c0f;
+  --color-link-hover: #3f6212;
+
+  /* ---- Colour: status pairs ------------------------------------------- */
+  --color-success: #0f766e;
+  --color-success-bg: #e6f4f1;
+  --color-success-line: #cfe7e1;
+
+  --color-warning: #b45309;
+  --color-warning-bg: #fdf3e3;
+  --color-warning-line: #f2e0bf;
+
+  --color-danger: #b42318;
+  --color-danger-bg: #fdecea;
+  --color-danger-line: #f5d5d1;
+
+  --color-info: #1d4ed8;
+  --color-info-bg: #e8edfd;
+  --color-info-line: #d3ddf9;
+
+  --color-neutral: var(--color-ink-2);
+  --color-neutral-bg: var(--color-bg-3);
+
+  /* Dark-surface tokens (sidebar, scanner, login panel) */
+  --color-dark: #14161a;
+  --color-dark-2: #1b1e23;
+  --color-dark-line: rgba(255, 255, 255, 0.1);
+  --color-dark-line-2: rgba(255, 255, 255, 0.16);
+  --color-dark-fill: rgba(255, 255, 255, 0.06);
+  --color-dark-fill-2: rgba(255, 255, 255, 0.14);
+  --color-dark-text: #c4c9d0;
+  --color-dark-text-2: #d3d7dd;
+  --color-dark-caption: #5c636d;
+
+  /* ---- Typography ------------------------------------------------------ */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* The reference uses deliberate half-pixel steps; they are part of the
+     visual identity and are preserved here rather than rounded. */
+  --text-2xs: 10px;
+  --text-xs: 10.5px;
+  --text-sm: 11.5px;
+  --text-base: 12.5px;
+  --text-md: 13px;
+  --text-lg: 13.5px;
+  --text-xl: 15px;
+  --text-2xl: 17px;
+  --text-3xl: 20px;
+  --text-4xl: 26px;
+  --text-display: 44px;
+
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.03em;
+  --tracking-wide: 0.06em;
+  --tracking-wider: 0.09em;
+  --tracking-widest: 0.14em;
+
+  /* ---- Spacing (4px base step) ---------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --radius-xs: 2px;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 7px;
+  --radius-xl: 9px;
+  --radius-2xl: 11px;
+  --radius-pill: 999px;
+
+  /* ---- Elevation ------------------------------------------------------- */
+  --shadow-control: 0 1px 2px rgba(20, 22, 26, 0.09);
+  --shadow-paper: 0 2px 14px rgba(20, 22, 26, 0.07);
+  --shadow-popover: 0 12px 28px rgba(20, 22, 26, 0.13);
+  --shadow-modal: 0 24px 60px rgba(20, 22, 26, 0.3);
+
+  /* ---- Control sizing -------------------------------------------------- */
+  --control-h: 42px;
+  --control-h-sm: 35px;
+  --control-h-md: 38px;
+  --control-h-lg: 44px;
+  --icon-btn: 29px;
+
+  /* ---- Layout ---------------------------------------------------------- */
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 64px;
+  --header-h: 60px;
+  --page-pad-x: 24px;
+  --page-pad-y: 22px;
+  --paper-w: 794px; /* A4 at 96dpi */
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 0.12s;
+  --dur: 0.16s;
+  --dur-slow: 0.24s;
+
+  --z-header: 40;
+  --z-sidebar: 45;
+  --z-popover: 60;
+  --z-modal: 80;
+  --z-toast: 90;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --page-pad-x: 16px;
+    --page-pad-y: 16px;
+  }
+}

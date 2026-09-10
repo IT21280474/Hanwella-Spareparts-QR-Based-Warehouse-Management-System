@@ -1,0 +1,340 @@
+.scanner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.scanner__layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: start;
+}
+
+.scanner__side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.scanner__camera-card {
+  overflow: hidden;
+}
+
+/* The viewport is dark whatever the camera does, so the frame corners and the
+   sweep stay legible while the stream is still negotiating. */
+.scanner__viewport {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--color-dark);
+  overflow: hidden;
+}
+
+.scanner__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scanner__viewport[data-state='denied'] .scanner__video,
+.scanner__viewport[data-state='unavailable'] .scanner__video,
+.scanner__viewport[data-state='starting'] .scanner__video {
+  opacity: 0;
+}
+
+.scanner__frame {
+  position: absolute;
+  inset: 16%;
+  pointer-events: none;
+}
+
+.scanner__corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid var(--color-brand);
+}
+
+.scanner__corner--tl {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: var(--radius-md);
+}
+
+.scanner__corner--tr {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+  border-top-right-radius: var(--radius-md);
+}
+
+.scanner__corner--bl {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.scanner__corner--br {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: var(--radius-md);
+}
+
+.scanner__sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-brand), transparent);
+  animation: sc-line 2s var(--ease) infinite;
+}
+
+@keyframes sc-line {
+  0%,
+  100% {
+    transform: translateY(-42px);
+  }
+  50% {
+    transform: translateY(42px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanner__sweep {
+    animation: none;
+  }
+}
+
+.scanner__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-dark-text);
+  font-size: var(--text-base);
+}
+
+.scanner__overlay-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: #fff;
+}
+
+.scanner__overlay-sub {
+  max-width: 34ch;
+  line-height: 1.55;
+  color: var(--color-dark-caption);
+}
+
+.scanner__badge {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(20, 22, 26, 0.72);
+  color: var(--color-brand);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.scanner__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.scanner__status {
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.scanner__manual {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.scanner__manual-icon {
+  flex: none;
+  color: var(--color-muted-2);
+}
+
+.scanner__manual .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.scanner__result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.scanner__result-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.scanner__result-text {
+  min-width: 0;
+}
+
+.scanner__result-name {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.scanner__result-meta {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.scanner__result-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+
+.scanner__result-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.scanner__fact-label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.scanner__fact-value {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.scanner__stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.scanner__quantity {
+  min-width: 34px;
+  text-align: center;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.scanner__stepper-hint {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.scanner__result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.scanner__empty {
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.scanner__recent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.scanner__recent-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scanner__recent-item:hover {
+  background: var(--color-bg-4);
+}
+
+.scanner__recent-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner__recent-name {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scanner__recent-meta {
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+}
+
+.scanner__recent-qty {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+@media (max-width: 900px) {
+  .scanner__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

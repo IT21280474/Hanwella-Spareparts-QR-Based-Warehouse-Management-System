@@ -1,0 +1,50 @@
+.pay-split__bar {
+  display: flex;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-3);
+  overflow: hidden;
+}
+
+.pay-split__segment {
+  height: 100%;
+}
+
+.pay-split__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.pay-split__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-base);
+}
+
+.pay-split__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.pay-split__label {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-ink-2);
+}
+
+.pay-split__count {
+  flex: none;
+  color: var(--color-muted-2);
+}
+
+.pay-split__amount {
+  flex: none;
+  width: 96px;
+  text-align: right;
+  font-weight: 500;
+}

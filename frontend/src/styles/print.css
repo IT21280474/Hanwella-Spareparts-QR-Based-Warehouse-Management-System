@@ -1,0 +1,41 @@
+/*
+ * Print rules. Chrome for the screen is removed and the print root becomes the
+ * page, so bills and label sheets print as physical documents rather than as
+ * screenshots of a dashboard.
+ */
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  [data-noprint] {
+    display: none !important;
+  }
+
+  [data-print-root] {
+    position: absolute;
+    inset: 0;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  [data-paper] {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+  }
+
+  [data-break-avoid] {
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
+}

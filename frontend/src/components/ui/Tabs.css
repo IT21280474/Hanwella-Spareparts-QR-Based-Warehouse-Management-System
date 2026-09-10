@@ -1,0 +1,107 @@
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.tabs__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tabs__tab:hover {
+  color: var(--color-ink);
+}
+
+.tabs__tab.is-active {
+  color: var(--color-ink);
+}
+
+.tabs__tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-ink);
+}
+
+.tabs__count {
+  font-weight: 500;
+  color: var(--color-muted-2);
+}
+
+/* ---- Segmented control ------------------------------------------------- */
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-3);
+}
+
+.segmented__option {
+  position: relative;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.segmented--sm .segmented__option {
+  height: 26px;
+  padding: 0 9px;
+  font-size: var(--text-sm);
+}
+
+.segmented--md .segmented__option {
+  height: 29px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+
+.segmented--lg .segmented__option {
+  height: 34px;
+  padding: 0 14px;
+  font-size: var(--text-md);
+}
+
+.segmented__option.is-active {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-control);
+  color: var(--color-ink);
+}
+
+.segmented__label {
+  position: relative;
+}
+
+.segmented__count {
+  font-weight: 500;
+  color: var(--color-muted-2);
+}
+
+/* Dark variant: active option is ink, used on the checkout payment control. */
+.segmented--ink .segmented__option.is-active {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.segmented--ink .segmented__option.is-active .segmented__count {
+  color: rgba(255, 255, 255, 0.6);
+}

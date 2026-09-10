@@ -1,0 +1,167 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings__tabs {
+  padding: 0 var(--space-4);
+}
+
+.settings__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings__fields {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.settings__span {
+  grid-column: 1 / -1;
+}
+
+.settings__preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.settings__preview-label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.settings__preview-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.settings__preview-note {
+  flex: 1 1 280px;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+/* Roles are read-only here — the catalogue is defined server-side, and this is
+   a statement of what it currently is. */
+.settings__roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.settings__role {
+  padding: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-2);
+}
+
+.settings__role-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.settings__role-name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.settings__role-desc {
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.settings__role-perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: var(--space-2);
+}
+
+.settings__perm {
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-3);
+  font-size: var(--text-2xs);
+  color: var(--color-ink-2);
+}
+
+.settings__note {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.settings__switches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.settings__switch {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.settings__switch:hover {
+  border-color: var(--color-line-3);
+}
+
+.settings__switch input {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-link);
+  flex: none;
+}
+
+.settings__switch-title {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.settings__switch-sub {
+  display: block;
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.settings__email {
+  max-width: 380px;
+}
+
+.settings__dirty {
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+}

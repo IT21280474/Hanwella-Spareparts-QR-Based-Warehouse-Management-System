@@ -1,0 +1,27 @@
+.print-stage {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 24px;
+  overflow-x: auto;
+}
+
+.print-paper {
+  flex: none;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-paper);
+}
+
+@media print {
+  .print-stage {
+    display: block;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .print-paper {
+    width: 100% !important;
+  }
+}

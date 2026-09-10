@@ -1,0 +1,84 @@
+.movements {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.movements__tabs {
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.movements__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.movements__toolbar .search {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.movements__dates {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.movements__dates .input {
+  width: 138px;
+}
+
+.movements__dash {
+  color: var(--color-muted-2);
+}
+
+.movements__when {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+/* The delta is the column the eye goes to first, so it carries the colour
+   rather than a badge that would compete with the type pill beside it. */
+.movements__delta {
+  font-weight: 700;
+}
+
+.movements__delta[data-tone='success'] {
+  color: var(--color-success);
+}
+
+.movements__delta[data-tone='danger'] {
+  color: var(--color-danger);
+}
+
+.movements__balance {
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.movements__reference {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+
+.movements__reason {
+  color: var(--color-muted);
+}
+
+@media (max-width: 640px) {
+  .movements__dates {
+    width: 100%;
+  }
+
+  .movements__dates .input {
+    flex: 1;
+    width: auto;
+  }
+}

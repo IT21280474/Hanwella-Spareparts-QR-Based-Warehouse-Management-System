@@ -1,0 +1,28 @@
+.app {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.app__column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--page-pad-y) var(--page-pad-x) var(--space-8);
+}
+
+.app__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 80px 20px;
+  font-size: var(--text-md);
+  color: var(--color-muted);
+}

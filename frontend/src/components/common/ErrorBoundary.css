@@ -1,0 +1,38 @@
+.boundary {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--color-bg);
+}
+
+.boundary__panel {
+  max-width: 460px;
+  padding: 28px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-paper);
+  text-align: center;
+}
+
+.boundary__title {
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 8px;
+}
+
+.boundary__text {
+  font-size: var(--text-md);
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.boundary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+}

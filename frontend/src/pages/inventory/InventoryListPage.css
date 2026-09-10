@@ -1,0 +1,84 @@
+.inventory {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inventory__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.inventory__title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.inventory__summary {
+  margin-top: 3px;
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.inventory__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Toolbar wraps rather than compressing: the search box keeps a usable width
+   on a tablet, and the filters drop to a second line instead of shrinking. */
+.inventory__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.inventory__toolbar .search {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.inventory__filter {
+  flex: 0 0 auto;
+}
+
+.inventory__category {
+  color: var(--color-ink-2);
+}
+
+.inventory__qty {
+  font-weight: 600;
+}
+
+.inventory__min {
+  font-size: var(--text-sm);
+  color: var(--color-muted-2);
+}
+
+.inventory__updated {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+@media (max-width: 640px) {
+  .inventory__head {
+    align-items: flex-start;
+  }
+
+  .inventory__actions {
+    width: 100%;
+  }
+
+  .inventory__actions > * {
+    flex: 1 1 auto;
+  }
+}

@@ -1,0 +1,39 @@
+.trend__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 164px;
+  padding-top: 8px;
+  overflow-x: auto;
+}
+
+.trend__column {
+  flex: 1;
+  min-width: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.trend__bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: #d7dce0;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.trend__bar:hover {
+  background: #b9c0c7;
+}
+
+.trend__bar.is-today {
+  background: var(--color-link);
+}
+
+.trend__label {
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  color: var(--color-muted);
+  white-space: nowrap;
+}

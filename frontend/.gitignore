@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+.env
+.env.local
+.env.*.local
+*.local
+coverage
+.vite
+.eslintcache
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json

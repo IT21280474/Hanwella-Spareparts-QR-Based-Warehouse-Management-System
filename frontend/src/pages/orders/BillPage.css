@@ -1,0 +1,265 @@
+.bill {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bill__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-9) 0;
+  font-size: var(--text-md);
+  color: var(--color-muted);
+}
+
+.bill__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.bill__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.bill__back:hover {
+  color: var(--color-ink);
+}
+
+/* ---- The paper itself -------------------------------------------------
+   Sized in absolute units, not tokens: this block is a physical document and
+   must measure the same on screen and on an A4 sheet. */
+
+.paper {
+  padding: 38px 34px;
+  color: #14161a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.paper__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid #14161a;
+}
+
+.paper__company-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.paper__company-line {
+  font-size: 10.5px;
+  color: #3a4048;
+}
+
+.paper__doc {
+  text-align: right;
+  flex: none;
+}
+
+.paper__doc-kind {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6e7681;
+}
+
+.paper__doc-no {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.paper__doc-date {
+  font-size: 10px;
+  color: #6e7681;
+}
+
+.paper__void {
+  margin-top: 12px;
+  padding: 6px 10px;
+  border: 1px solid #f5d5d1;
+  background: #fdecea;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #b42318;
+}
+
+.paper__parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 16px 0;
+}
+
+.paper__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #6e7681;
+}
+
+.paper__value {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.paper__sub {
+  font-size: 10px;
+  color: #3a4048;
+}
+
+.paper__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+
+.paper__table th {
+  padding: 6px 8px;
+  border-top: 1px solid #14161a;
+  border-bottom: 1px solid #14161a;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #3a4048;
+}
+
+.paper__table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #e3e6ea;
+  vertical-align: top;
+}
+
+.paper__table .is-left {
+  text-align: left;
+}
+
+.paper__table .is-right {
+  text-align: right;
+}
+
+.paper__index {
+  color: #9aa1ab;
+}
+
+.paper__part {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.paper__part-meta {
+  display: block;
+  font-size: 9px;
+  color: #6e7681;
+}
+
+.paper__amount {
+  font-weight: 600;
+}
+
+.paper__foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  padding-top: 16px;
+}
+
+.paper__qr {
+  text-align: center;
+  flex: none;
+}
+
+.paper__qr-note {
+  margin-top: 4px;
+  font-size: 8px;
+  color: #6e7681;
+}
+
+.paper__totals {
+  width: 260px;
+  flex: none;
+}
+
+.paper__totals > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  font-size: 11px;
+  color: #3a4048;
+}
+
+.paper__totals-grand {
+  margin-top: 4px;
+  padding-top: 7px !important;
+  border-top: 1px solid #14161a;
+  font-size: 14px !important;
+  font-weight: 700;
+  color: #14161a !important;
+}
+
+.paper__totals-due dd {
+  font-weight: 700;
+  color: #b45309;
+}
+
+.paper__note {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e6ea;
+  font-size: 9px;
+  line-height: 1.6;
+  color: #6e7681;
+}
+
+.paper__thanks {
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #3a4048;
+}
+
+@media (max-width: 640px) {
+  .paper {
+    padding: 20px 16px;
+  }
+
+  .paper__head,
+  .paper__foot {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .paper__doc {
+    text-align: left;
+  }
+
+  .paper__parties {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .paper__totals {
+    width: 100%;
+  }
+}

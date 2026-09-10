@@ -1,0 +1,162 @@
+.picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.picker__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.picker__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.picker__control:focus-within {
+  border-color: var(--color-line-3);
+  outline: 2px solid var(--color-link);
+  outline-offset: 1px;
+}
+
+.picker__icon {
+  flex: none;
+  color: var(--color-muted-2);
+}
+
+.picker__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-md);
+  color: var(--color-ink);
+}
+
+.picker__input:focus {
+  outline: none;
+}
+
+.picker__input::placeholder {
+  color: var(--color-muted-2);
+}
+
+/* Results overlay the content below rather than pushing it, so the cart or the
+   receipt form does not jump while someone is typing. */
+.picker__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: var(--z-popover);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-popover);
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.picker__result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.picker__result.is-active {
+  background: var(--color-bg-4);
+}
+
+.picker__result-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.picker__result-name {
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker__result-meta {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.picker__result-price {
+  flex: none;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.picker__empty {
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* Chosen state — the search box is replaced by the record it resolved to. */
+.picker__chosen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+
+.picker__chosen-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.picker__chosen-name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker__chosen-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.picker__sep {
+  color: var(--color-line-3);
+}

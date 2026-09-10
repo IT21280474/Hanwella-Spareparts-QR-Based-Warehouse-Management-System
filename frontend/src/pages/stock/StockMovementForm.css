@@ -1,0 +1,209 @@
+.stock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stock-form__layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.stock-form__main,
+.stock-form__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.stock-form__aside {
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-3));
+}
+
+.stock-form__fields {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.stock-form__span {
+  grid-column: 1 / -1;
+}
+
+.stock-form__stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stock-form__stepper .icon-btn {
+  flex: none;
+}
+
+.stock-form__quantity {
+  width: 96px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Before/after preview — the same shape the adjust-stock dialog uses, so the
+   two ways of changing stock read identically. */
+.stock-form__preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+
+.stock-form__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stock-form__cell-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.stock-form__cell-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.stock-form__cell-value[data-tone='ok'] {
+  color: var(--color-success);
+}
+
+.stock-form__cell-value[data-tone='warning'] {
+  color: var(--color-warning);
+}
+
+.stock-form__cell-value[data-tone='danger'] {
+  color: var(--color-danger);
+}
+
+.stock-form__arrow {
+  font-size: var(--text-md);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.stock-form__arrow[data-direction='in'] {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.stock-form__arrow[data-direction='out'] {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.stock-form__facts {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-form__fact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.stock-form__fact:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.stock-form__fact strong {
+  font-size: var(--text-md);
+  color: var(--color-ink);
+}
+
+.stock-form__hint {
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.stock-form__submit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Confirmation of the movement just written, so a run of receipts can be
+   entered one after another without leaving the screen. */
+.stock-form__receipt {
+  border-color: var(--color-success-line);
+  background: var(--color-success-bg);
+}
+
+.stock-form__receipt-body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  flex-wrap: wrap;
+}
+
+.stock-form__receipt-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: #fff;
+}
+
+.stock-form__receipt-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.stock-form__receipt-meta {
+  font-size: var(--text-base);
+  color: var(--color-success);
+}
+
+.stock-form__receipt-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+}
+
+@media (max-width: 900px) {
+  .stock-form__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stock-form__aside {
+    position: static;
+  }
+}

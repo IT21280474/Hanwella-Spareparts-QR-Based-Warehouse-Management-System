@@ -1,0 +1,92 @@
+.activity {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f2f4f5;
+  color: inherit;
+  text-decoration: none;
+}
+
+.activity li:last-child .activity__row {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.activity__row:hover {
+  text-decoration: none;
+}
+
+.activity__row:hover .activity__text {
+  color: var(--color-link);
+}
+
+.activity__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 30px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.activity__mark.is-paid {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.activity__mark.is-open {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.activity__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity__text {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-muted-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity__stock {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.activity__stock.is-low {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.activity__stock.is-out {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}

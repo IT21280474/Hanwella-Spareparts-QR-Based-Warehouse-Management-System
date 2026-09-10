@@ -1,0 +1,29 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.field__required {
+  color: var(--color-danger);
+}
+
+.field__hint {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.field__error {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-danger);
+  line-height: 1.5;
+}

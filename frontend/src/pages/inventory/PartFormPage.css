@@ -1,0 +1,197 @@
+.part-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.part-form__back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.part-form__back-link:hover {
+  color: var(--color-ink);
+}
+
+/* Form body and the summary rail. The rail drops below the form once there is
+   no longer room for two columns, so the submit buttons stay reachable. */
+.part-form__layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+}
+
+.part-form__main,
+.part-form__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.part-form__aside {
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-3));
+}
+
+.part-form__fields {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.part-form__span {
+  grid-column: 1 / -1;
+}
+
+.part-form__photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.part-form__photo-preview {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.part-form__photo-img {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-2);
+}
+
+.part-form__photo-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-danger);
+  box-shadow: var(--shadow-control);
+}
+
+.part-form__photo-remove:hover {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-line);
+}
+
+.part-form__photo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 140px;
+  height: 140px;
+  border: 1px dashed var(--color-line-3);
+  border-radius: var(--radius-md);
+  color: var(--color-muted-2);
+  background: var(--color-bg-2);
+}
+
+.part-form__photo-picker {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-link);
+  cursor: pointer;
+}
+
+.part-form__photo-picker:hover {
+  color: var(--color-link-hover);
+}
+
+.part-form__photo-error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.part-form__qr-toggle {
+  margin-bottom: var(--space-3);
+}
+
+.part-form__qr-manual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.part-form__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.part-form__qr-code {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.part-form__qr-note {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.part-form__qr-placeholder {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  border: 1px dashed var(--color-line-3);
+  border-radius: var(--radius-md);
+  color: var(--color-muted-2);
+  background: var(--color-bg-2);
+}
+
+.part-form__margin-value {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.part-form__margin-sub {
+  margin-top: 2px;
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.part-form__submit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.part-form__dirty {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+}
+
+@media (max-width: 900px) {
+  .part-form__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .part-form__aside {
+    position: static;
+  }
+}

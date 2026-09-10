@@ -1,0 +1,136 @@
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.auth__brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 56px 56px 40px;
+  background: var(--color-dark);
+  color: #fff;
+  min-width: 0;
+}
+
+.auth__brand-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth__logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-brand);
+  color: var(--color-brand-ink);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+.auth__brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.auth__pitch {
+  max-width: 460px;
+}
+
+.auth__eyebrow {
+  margin-bottom: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+.auth__headline {
+  margin-bottom: 20px;
+  font-size: var(--text-display);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: var(--tracking-tighter);
+  text-wrap: pretty;
+}
+
+.auth__lede {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-muted-3);
+  text-wrap: pretty;
+}
+
+.auth__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 36px;
+}
+
+.auth__list-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--color-dark-text-2);
+}
+
+.auth__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-brand);
+}
+
+.auth__credit {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.auth__panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 32px;
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.auth__form {
+  width: 100%;
+  max-width: 380px;
+}
+
+@media (max-width: 900px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth__brand {
+    gap: 24px;
+    padding: 28px 24px;
+  }
+
+  .auth__headline {
+    font-size: 30px;
+  }
+
+  .auth__lede,
+  .auth__list,
+  .auth__credit {
+    display: none;
+  }
+
+  .auth__panel {
+    padding: 32px 24px 48px;
+  }
+}

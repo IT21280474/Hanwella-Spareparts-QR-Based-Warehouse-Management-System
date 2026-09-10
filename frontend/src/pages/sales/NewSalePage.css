@@ -1,0 +1,246 @@
+.sale {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sale__layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  align-items: start;
+}
+
+.sale__main,
+.sale__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sale__aside {
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-3));
+}
+
+.sale__recent {
+  margin-top: var(--space-4);
+}
+
+.sale__recent-strip {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.sale__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 4px 9px 4px 4px;
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.sale__chip:hover {
+  border-color: var(--color-line-3);
+  background: var(--color-bg-4);
+}
+
+.sale__chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Order lines. Each row is a grid so the money column stays aligned however
+   long the part names run. */
+.sale__lines {
+  list-style: none;
+}
+
+.sale__line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-line);
+}
+
+.sale__line:first-child {
+  border-top: 0;
+}
+
+.sale__line-text {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.sale__line-name {
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sale__line-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.sale__sep {
+  color: var(--color-line-3);
+}
+
+.sale__line-stepper {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
+.sale__line-qty {
+  width: 52px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.sale__line-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex: none;
+  min-width: 118px;
+}
+
+.sale__line-total {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.sale__line-left {
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+}
+
+.sale__line-left[data-low='true'] {
+  color: var(--color-warning);
+}
+
+.sale__customer,
+.sale__settle {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.sale__settle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sale__segment {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sale__segment-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.sale__totals {
+  display: flex;
+  flex-direction: column;
+}
+
+.sale__totals > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 6px 0;
+  font-size: var(--text-md);
+  color: var(--color-muted);
+}
+
+.sale__totals dd {
+  color: var(--color-ink-2);
+}
+
+.sale__totals-grand {
+  margin-top: 4px;
+  padding-top: var(--space-3) !important;
+  border-top: 1px solid var(--color-line);
+}
+
+.sale__totals-grand dt {
+  font-weight: 600;
+  color: var(--color-ink) !important;
+}
+
+.sale__totals-grand dd {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink) !important;
+}
+
+.sale__totals-outstanding dd {
+  font-weight: 600;
+  color: var(--color-warning) !important;
+}
+
+.sale__checkout {
+  margin-top: var(--space-4);
+}
+
+.sale__note {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.sale__confirm {
+  font-size: var(--text-md);
+  line-height: 1.55;
+  color: var(--color-ink-2);
+}
+
+@media (max-width: 900px) {
+  .sale__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sale__aside {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .sale__line {
+    flex-wrap: wrap;
+  }
+
+  .sale__line-right {
+    align-items: flex-start;
+    min-width: 0;
+  }
+}

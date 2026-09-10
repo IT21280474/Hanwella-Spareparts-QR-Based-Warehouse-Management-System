@@ -1,0 +1,116 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+}
+
+.btn__label {
+  display: inline-block;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* ---- Sizes ------------------------------------------------------------- */
+.btn--sm {
+  height: 30px;
+  padding: 0 11px;
+  font-size: var(--text-base);
+}
+
+.btn--md {
+  height: 36px;
+  padding: 0 14px;
+  font-size: var(--text-md);
+}
+
+.btn--lg {
+  height: var(--control-h-lg);
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+/* ---- Variants ---------------------------------------------------------- */
+.btn--primary {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: #000;
+}
+
+.btn--secondary {
+  background: var(--color-surface);
+  border-color: var(--color-line-2);
+  color: var(--color-ink);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg);
+  border-color: var(--color-line-3);
+}
+
+.btn--ghost {
+  background: none;
+  color: var(--color-muted);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--color-bg-3);
+  color: var(--color-ink);
+}
+
+.btn--brand {
+  background: var(--color-brand);
+  color: var(--color-brand-ink);
+}
+
+.btn--brand:hover:not(:disabled) {
+  background: #98d92c;
+}
+
+.btn--danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: #9c1e14;
+}
+
+.btn--danger-outline {
+  background: var(--color-surface);
+  border-color: var(--color-danger-line);
+  color: var(--color-danger);
+}
+
+.btn--danger-outline:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+}
+
+/* On dark surfaces (sidebar, scanner, login panel). */
+.btn--onDark {
+  background: var(--color-dark-fill);
+  border-color: var(--color-dark-line);
+  color: #fff;
+}
+
+.btn--onDark:hover:not(:disabled) {
+  background: var(--color-dark-fill-2);
+}

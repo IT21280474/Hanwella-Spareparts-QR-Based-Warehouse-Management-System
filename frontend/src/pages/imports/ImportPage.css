@@ -1,0 +1,231 @@
+.import {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Step rail. The connector is drawn between markers rather than under the
+   labels, so it stays straight when a label wraps. */
+.import__steps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  list-style: none;
+  overflow-x: auto;
+}
+
+.import__step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.import__step:not(:last-child)::after {
+  content: '';
+  width: 26px;
+  height: 1px;
+  margin-left: 6px;
+  background: var(--color-line);
+}
+
+.import__step-mark {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  background: var(--color-bg-3);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.import__step[data-state='done'] .import__step-mark {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-line);
+  color: var(--color-success);
+}
+
+.import__step[data-state='current'] .import__step-mark {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #fff;
+}
+
+.import__step-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.import__step[data-state='current'] .import__step-label {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.import__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-5);
+  border: 1px dashed var(--color-line-3);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-2);
+  text-align: center;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.import__drop[data-dragging='true'] {
+  border-color: var(--color-link);
+  background: var(--color-bg-4);
+}
+
+.import__drop-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--color-bg-3);
+  color: var(--color-ink-2);
+}
+
+.import__drop-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.import__drop-sub {
+  max-width: 46ch;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--color-muted);
+  margin-bottom: var(--space-2);
+}
+
+.import__input {
+  display: none;
+}
+
+.import__progress {
+  width: min(320px, 100%);
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-4);
+  overflow: hidden;
+}
+
+.import__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-link);
+  transition: width var(--dur) var(--ease);
+}
+
+.import__error {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-danger-line);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  font-size: var(--text-base);
+  color: var(--color-danger);
+}
+
+.import__errors {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.import__error-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-base);
+}
+
+.import__error-row:last-child {
+  border-bottom: 0;
+}
+
+.import__error-row svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-danger);
+}
+
+.import__error-rows {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.import__error-message {
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.import__errors-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.import__row-no {
+  color: var(--color-muted-2);
+}
+
+.import__photo-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.import__photo-note {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.import__commit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.import__commit-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.import__commit-sub {
+  margin-top: 2px;
+  max-width: 60ch;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.import__done-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}

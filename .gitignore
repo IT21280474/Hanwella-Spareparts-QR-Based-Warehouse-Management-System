@@ -1,0 +1,62 @@
+# ---- Environment & secrets (never commit) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+auth.json
+
+# ---- Dependencies ----
+node_modules/
+vendor/
+
+# ---- Build output ----
+dist/
+build/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+
+# ---- Laravel runtime ----
+backend/storage/*.key
+backend/storage/app/private/
+backend/storage/app/public/
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/bootstrap/cache/*.php
+!**/.gitignore
+
+# ---- Local databases ----
+*.sqlite
+*.sqlite-journal
+
+# ---- Test & coverage ----
+coverage/
+.phpunit.result.cache
+.phpunit.cache/
+backend/.phpunit.result.cache
+
+# ---- Tooling caches ----
+.php-cs-fixer.cache
+.vite/
+.eslintcache
+
+# ---- Editors ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Logs ----
+*.log
+npm-debug.log*
+yarn-error.log*

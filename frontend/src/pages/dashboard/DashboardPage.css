@@ -1,0 +1,32 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dashboard__row {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard__row--split {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.dashboard__row--thirds {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.dashboard__link {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.dashboard__skeleton {
+  display: flex;
+  align-items: flex-end;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--color-bg-3) 0%, var(--color-bg-4) 40%, var(--color-bg-3) 80%);
+  background-size: 400px 100%;
+  animation: sc-shim 1.2s linear infinite;
+}

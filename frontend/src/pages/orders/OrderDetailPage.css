@@ -1,0 +1,227 @@
+.order {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order__back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.order__back-link:hover {
+  color: var(--color-ink);
+}
+
+.order__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  flex-wrap: wrap;
+}
+
+.order__head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.order__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.order__no {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.order__meta {
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.order__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.order__layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+}
+
+.order__main,
+.order__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.order__line-total {
+  font-weight: 600;
+}
+
+.order__gone {
+  font-size: var(--text-md);
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* Timeline. The rail is drawn on the marker column so it lines up whatever the
+   text below each step wraps to. */
+.order__timeline {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.order__step {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+
+.order__step:last-child {
+  padding-bottom: 0;
+}
+
+.order__step::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-line);
+}
+
+.order__step:last-child::before {
+  display: none;
+}
+
+.order__step-mark {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  background: var(--color-bg-3);
+  color: var(--color-muted);
+  z-index: 1;
+}
+
+.order__step[data-state='done'] .order__step-mark {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-line);
+  color: var(--color-success);
+}
+
+.order__step[data-state='current'] .order__step-mark {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-line);
+  color: var(--color-warning);
+}
+
+.order__step[data-state='undone'] .order__step-mark {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-line);
+  color: var(--color-danger);
+}
+
+.order__step-label {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.order__step[data-state='todo'] .order__step-label {
+  color: var(--color-muted);
+}
+
+.order__step-detail {
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.order__totals {
+  display: flex;
+  flex-direction: column;
+}
+
+.order__totals > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 6px 0;
+  font-size: var(--text-md);
+  color: var(--color-muted);
+}
+
+.order__totals dd {
+  color: var(--color-ink-2);
+}
+
+.order__totals-grand {
+  margin-top: 4px;
+  padding-top: var(--space-3) !important;
+  border-top: 1px solid var(--color-line);
+}
+
+.order__totals-grand dt {
+  font-weight: 600;
+  color: var(--color-ink) !important;
+}
+
+.order__totals-grand dd {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink) !important;
+}
+
+.order__totals-outstanding dd {
+  font-weight: 600;
+  color: var(--color-warning) !important;
+}
+
+.order__mode {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-line);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.order__confirm {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-md);
+  line-height: 1.55;
+  color: var(--color-ink-2);
+}
+
+@media (max-width: 900px) {
+  .order__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,148 @@
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table__th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 10px;
+  background: var(--color-bg-2);
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table__th:first-child,
+.table__td:first-child {
+  padding-left: 14px;
+}
+
+.table__th:last-child,
+.table__td:last-child {
+  padding-right: 14px;
+}
+
+.table__th.is-right,
+.table__td.is-right {
+  text-align: right;
+}
+
+.table__th.is-center,
+.table__td.is-center {
+  text-align: center;
+}
+
+.table__th.is-left,
+.table__td.is-left {
+  text-align: left;
+}
+
+.table__sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-transform: inherit;
+}
+
+.table__sort:hover {
+  color: var(--color-ink);
+}
+
+.table__th.is-right .table__sort {
+  margin-left: auto;
+}
+
+.table__tr {
+  border-bottom: 1px solid #f2f4f5;
+}
+
+.table__tr:hover {
+  background: var(--color-bg-2);
+}
+
+.table__td {
+  padding: 8px 10px;
+  font-size: var(--text-md);
+  vertical-align: middle;
+}
+
+.table__td.is-nowrap {
+  white-space: nowrap;
+}
+
+/* Compact density for long operational lists. */
+.table--compact .table__td {
+  padding: 5px 10px;
+}
+
+.table__row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Primary cell: part name over a mono identifier line. */
+.table__primary {
+  display: block;
+  max-width: 330px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.table__primary-name {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table__primary:hover .table__primary-name {
+  color: var(--color-link);
+}
+
+.table__primary-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.table__primary-meta .sep {
+  color: var(--color-line-3);
+}
+
+.table__primary-meta .code {
+  color: var(--color-link);
+}
+
+.table__qr {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-line);
+  border-radius: 3px;
+  background: #fff;
+}

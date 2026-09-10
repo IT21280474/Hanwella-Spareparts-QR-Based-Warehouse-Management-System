@@ -1,0 +1,141 @@
+.success {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-6);
+}
+
+.success__card {
+  width: 100%;
+  max-width: 520px;
+}
+
+.success__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.success__mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  animation: sc-pop 0.18s var(--ease);
+}
+
+@keyframes sc-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success__mark {
+    animation: none;
+  }
+}
+
+.success__title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.success__subtitle {
+  font-size: var(--text-base);
+  color: var(--color-muted);
+}
+
+.success__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.success__total {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-ink);
+}
+
+.success__chips {
+  display: flex;
+  gap: 6px;
+}
+
+.success__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-2) var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+
+.success__facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.success__facts dt {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.success__facts dd {
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.success__facts-warn dd {
+  color: var(--color-warning);
+}
+
+.success__note {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--color-muted);
+  max-width: 42ch;
+}
+
+.success__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.success__actions > a {
+  display: block;
+}
+
+.success__actions .btn {
+  width: 100%;
+}
