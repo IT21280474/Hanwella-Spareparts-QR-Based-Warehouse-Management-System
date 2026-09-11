@@ -20,6 +20,9 @@ class DatabaseSeeder extends Seeder
             WarehouseSeeder::class,
             CatalogSeeder::class,
             PartSeeder::class,
+
+            // Needs stocked parts and the cashier/Security accounts above.
+            SalesOrderSeeder::class,
         ]);
     }
 }
