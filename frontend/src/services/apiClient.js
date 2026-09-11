@@ -12,6 +12,13 @@ import { toApiError } from '@/utils/errors';
 export const apiClient = axios.create({
   baseURL: `${API_URL}/api/v1`,
   withCredentials: true,
+  // Axios only auto-attaches the XSRF-TOKEN cookie's value as a request
+  // header on same-origin requests unless this is set — in local dev the
+  // Vite proxy makes every request same-origin so this never mattered, but
+  // in production the frontend and API sit on different subdomains
+  // (cross-origin, even though they share a cookie-eligible parent domain),
+  // and without this every mutating request 419s with no CSRF header sent.
+  withXSRFToken: true,
   timeout: 20_000,
   headers: {
     Accept: 'application/json',
