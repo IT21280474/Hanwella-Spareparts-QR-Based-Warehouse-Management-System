@@ -108,19 +108,10 @@ class Part extends Model
 
     // ---------- scopes ----------
 
-    /**
-     * Attach `total_stock` so status and sorting never trigger N+1 queries.
-     *
-     * `groupBy('parts.id')` is a no-op on the actual rows returned (grouping
-     * by the primary key produces exactly one group per row, same as
-     * ungrouped) — it exists only so `ONLY_FULL_GROUP_BY` (on by default on
-     * MySQL 8 and stricter still on some MariaDB builds) allows referencing
-     * `parts.*` columns and the `total_stock` alias in the HAVING/ORDER BY
-     * clauses {@see scopeStockStatus()} and its callers add on top of this.
-     */
+    /** Attach `total_stock` so status and sorting never trigger N+1 queries. */
     public function scopeWithStock(Builder $query): Builder
     {
-        return $query->withSum('inventory as total_stock', 'quantity')->groupBy('parts.id');
+        return $query->withSum('inventory as total_stock', 'quantity');
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

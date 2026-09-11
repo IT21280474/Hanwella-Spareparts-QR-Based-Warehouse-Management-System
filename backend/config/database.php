@@ -58,6 +58,27 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Same list Laravel's own MySqlConnector would set for `strict
+            // => true`, minus ONLY_FULL_GROUP_BY. That mode is what strict
+            // mode is really for on the write side (rejecting silently
+            // truncated/invalid data) — this app's read side leans on
+            // Eloquent's `withSum`/`withCount` (a correlated subquery
+            // column) referenced from HAVING/ORDER BY, a completely valid,
+            // standard pattern that ONLY_FULL_GROUP_BY nonetheless rejects.
+            // MySQL 8 alone would tolerate it by recognising a `GROUP BY`
+            // on the primary key as making every other column functionally
+            // dependent — MariaDB does not extend that same relaxation to
+            // `SELECT parts.*`, so grouping by the primary key is not a
+            // portable fix; excluding this one mode is (found live,
+            // 2026-09-11: `1055 ... isn't in GROUP BY` on production, which
+            // runs MariaDB under Laravel's `mysql` driver).
+            'modes' => [
+                'STRICT_TRANS_TABLES',
+                'NO_ZERO_IN_DATE',
+                'NO_ZERO_DATE',
+                'ERROR_FOR_DIVISION_BY_ZERO',
+                'NO_ENGINE_SUBSTITUTION',
+            ],
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
@@ -78,6 +99,18 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // See the matching comment on the 'mysql' connection above —
+            // same reasoning applies here, and matters more here: this is
+            // the connection actually named after the engine (MariaDB) that
+            // doesn't extend ONLY_FULL_GROUP_BY's primary-key relaxation to
+            // `SELECT table.*`.
+            'modes' => [
+                'STRICT_TRANS_TABLES',
+                'NO_ZERO_IN_DATE',
+                'NO_ZERO_DATE',
+                'ERROR_FOR_DIVISION_BY_ZERO',
+                'NO_ENGINE_SUBSTITUTION',
+            ],
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
