@@ -6,3 +6,49 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
 </IfModule>
+
+# Security response headers. The CSP below is built from what this app
+# actually loads, not a generic template — update it if a new external
+# resource is ever added:
+#   - script-src 'self' only: Vite bundles everything, nothing inline/eval
+#   - style-src needs 'unsafe-inline': React's `style={{...}}` prop compiles
+#     to real inline style="" attributes, which CSP has no nonce/hash story
+#     for in a client-rendered SPA
+#   - img-src allows the API's own origin (part photos are served from
+#     there) and data: (QR codes are rendered client-side as inline SVG
+#     data URIs — see src/utils/qr.js)
+#   - connect-src allows the API origin, for every XHR/fetch call
+#   - worker-src allows blob:, which the QR scanner library may spin its
+#     decode worker up from depending on how it's bundled
+#   - frame-ancestors 'none': this app is never meant to be embedded
+#     anywhere, not even by itself — see also X-Frame-Options below, kept
+#     for the (shrinking) set of browsers that don't honour frame-ancestors
+#
+# Fonts (IBM Plex Sans/Mono) used to load from fonts.googleapis.com /
+# fonts.gstatic.com — self-hosted now (src/styles/fonts.css), which is why
+# neither origin appears anywhere below. That also resolved a security scan
+# finding about a missing Subresource Integrity attribute on that external
+# stylesheet: Google's font CSS is generated per-browser, so a real SRI hash
+# pinned to it would be fragile; removing the external dependency entirely
+# is the actual fix, not a hash pinned to a moving target.
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api-hanwella-spareparts.eagleeyetaxi.com; font-src 'self'; connect-src 'self' https://api-hanwella-spareparts.eagleeyetaxi.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+
+  # Hashed filenames (Vite's build output) can be cached forever — a new
+  # deploy ships new filenames, never reuses an old one with different
+  # content. index.html itself must never be cached, or a deploy wouldn't
+  # reach visitors until their cache happened to expire.
+  <FilesMatch "\.(js|css|woff2|svg|png|jpg|jpeg|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+ServerSignature Off

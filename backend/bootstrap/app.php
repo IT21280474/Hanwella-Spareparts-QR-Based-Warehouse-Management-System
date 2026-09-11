@@ -2,6 +2,7 @@
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Middleware\EnsurePermission;
+use App\Http\Middleware\SecurityHeaders;
 use App\Support\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [
             HandleCors::class,
             ThrottleRequests::class.':api',
+            SecurityHeaders::class,
         ]);
 
         $middleware->alias([
@@ -69,7 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return match (true) {
+            return SecurityHeaders::apply(match (true) {
                 $e instanceof ValidationException => ApiResponse::error(
                     'Validation failed.',
                     422,
@@ -133,6 +135,6 @@ return Application::configure(basePath: dirname(__DIR__))
                         : 'An unexpected error occurred.',
                     500,
                 ),
-            };
+            }, $request);
         });
     })->create();

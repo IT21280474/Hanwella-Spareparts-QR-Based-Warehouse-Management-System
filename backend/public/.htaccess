@@ -1,3 +1,15 @@
+# Everything else (security response headers, X-Powered-By removal) is
+# handled application-side by App\Http\Middleware\SecurityHeaders — every
+# request here reaches index.php, so PHP-level headers already apply
+# universally. This file only sets what only Apache itself can control:
+# the server signature Apache appends to its own error pages.
+#
+# `ServerTokens Prod` (trims the Server response header on every response,
+# not just error pages) can only be set in the main server config, not an
+# .htaccess override — ask the hosting provider to set it if the ZAP
+# "Server Leaks Version Information" finding needs to be fully closed.
+ServerSignature Off
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

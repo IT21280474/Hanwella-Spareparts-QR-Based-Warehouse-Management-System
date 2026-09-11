@@ -13,15 +13,30 @@ This app authenticates with a Sanctum **SPA session cookie** — not a bearer to
 httpOnly cookie; nothing is stored in `localStorage`). That makes three settings the actual
 crux of a working deployment, more than any other step here:
 
-1. **Frontend and API must share a registrable domain.** E.g. `app.hanwellaspares.lk`
+1. **Frontend and API must share a registrable domain (eTLD+1).** E.g. `app.hanwellaspares.lk`
    (frontend) and `api.hanwellaspares.lk` (backend) share `hanwellaspares.lk` and work; two
-   unrelated domains do not — the cookie will simply never arrive.
+   unrelated domains do not — the cookie will simply never arrive. Sibling subdomains of the
+   same registrable domain are **same-site** by the SameSite cookie spec's own definition
+   (which is eTLD+1-based, not exact-origin-based) — `SameSite=Lax` already covers the
+   frontend calling the API with credentials; you do not need `SameSite=None` just because
+   they're on different subdomains, only if they were on genuinely unrelated domains.
 2. **`backend/.env`**:
-   - `SESSION_DOMAIN=.hanwellaspares.lk` (leading dot — shared across subdomains)
+   - `SESSION_DOMAIN` — leave this **unset** (host-only cookie, scoped to just the API's own
+     host). Do **not** set it to a leading-dot parent domain (`.hanwellaspares.lk`) unless
+     something *other than the API itself* genuinely needs to read this cookie — it doesn't,
+     since it's httpOnly and only ever sent back to whichever host set it. A parent-domain
+     cookie is sent to *every* subdomain of that registrable domain, which is a real,
+     avoidable widening of what can see the cookie ride along on a request — and a
+     meaningfully bigger deal on a shared multi-tenant domain (e.g. a hosting platform's own
+     domain, or `*.eagleeyetaxi.com`-style shared infrastructure hosting more than one
+     unrelated project) than on a domain dedicated to this one application. A security scan
+     will flag the parent-domain version as "Loosely Scoped Cookie" — correctly.
    - `SANCTUM_STATEFUL_DOMAINS=app.hanwellaspares.lk` (the frontend's host, no scheme)
-   - `SESSION_SAME_SITE=lax` (or `none` if frontend and API are on genuinely different
+   - `SESSION_SAME_SITE=lax` (or `none` only if frontend and API are on genuinely different
      eTLD+1 domains — which additionally requires `SESSION_SECURE_COOKIE=true` and HTTPS
      everywhere, since `SameSite=None` cookies are rejected by browsers over plain HTTP)
+   - `SESSION_SECURE_COOKIE=true` — always, in production. HTTPS is mandatory here (below)
+     regardless, so there's no case where this should be anything but `true` once deployed.
 3. **`frontend/.env`**: `VITE_API_URL` pointing at the real API origin, baked in at build
    time (`npm run build` — Vite inlines `VITE_*` vars into the built JS, so this must be set
    *before* building, not adjusted afterward).
@@ -35,13 +50,69 @@ explicit `allowed_origins` list (never `'*'` — browsers reject a wildcard orig
 request sent with credentials, which is every request this app makes). It reads
 `FRONTEND_URL` from `.env`, so a production deploy just needs that variable set to the
 real frontend origin (e.g. `https://app.hanwellaspares.lk`) **before** `config:cache` runs
-— it also hardcodes `http://127.0.0.1:5173` as a permanent second allowed origin, which is
-a harmless local-dev convenience (nothing in production ever requests from it) rather than
-something that needs removing per environment.
+— the `http://127.0.0.1:5173` dev convenience is only added outside `APP_ENV=production`,
+so a production deploy's CORS policy never mentions it at all.
 
-This was found and fixed live: the missing file meant every credentialed request from a
-real browser failed as an opaque "cannot reach the server" network error (curl-based
-testing never caught it, because curl doesn't enforce CORS — only browsers do).
+**A note on `config/cors.php` (or any `config/*.php` file) reading the environment:** use
+`env('APP_ENV')`, never `app()->environment(...)`. Config files load very early in the boot
+sequence (`LoadConfiguration`), before the `app()` helper reliably resolves to the real
+`Application` instance — calling it from inside a config file breaks *every* request and
+every `artisan` command with a cryptic `"Target class [env] does not exist"` error. Hit and
+fixed live during this same security-remediation pass (2026-09-11) — costly enough
+(`php artisan serve`, `package:discover`, and every HTTP route all failing at once) to call
+out explicitly so it doesn't get reintroduced.
+
+This CORS-file-missing issue above was found and fixed live: the missing file meant every
+credentialed request from a real browser failed as an opaque "cannot reach the server"
+network error (curl-based testing never caught it, because curl doesn't enforce CORS — only
+browsers do).
+
+## 1a. Security response headers (added 2026-09-11, following a ZAP scan)
+
+An OWASP ZAP scan of the live site found missing security headers, a couple of
+configuration-hygiene issues, and one genuine cookie-scope concern. All of it is now fixed
+in code — nothing further to do at deploy time beyond deploying normally — but it's worth
+knowing what's where:
+
+- **Backend** (`app/Http/Middleware/SecurityHeaders.php`, applied to the whole `api`
+  middleware group in `bootstrap/app.php`, plus the same logic reused in the exception
+  render closure so error responses get it too): `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, a strict
+  `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` (this is a pure JSON
+  API — it never has a legitimate reason to load or execute anything), `Cache-Control:
+  no-store, private, must-revalidate` on every response (nothing here should ever be served
+  from a shared/intermediary cache), `Strict-Transport-Security` only when the request is
+  actually HTTPS, and `X-Powered-By` removed. `ServerSignature Off` is set in
+  `backend/public/.htaccess` too (the one Apache-only concern PHP can't control).
+  `ServerTokens Prod` (trims the `Server` header itself, not just its error-page signature)
+  can only be set in the main Apache config, not `.htaccess` — ask the hosting provider if
+  the "Server Leaks Version Information" finding needs to be fully closed.
+- **Frontend** (`frontend/public/.htaccess`): the same headers, plus a CSP tailored to what
+  the SPA actually loads (see the comment above that block in the file — update it if a new
+  external resource is ever added) and `Permissions-Policy: camera=(self), microphone=(),
+  geolocation=()`. Google Fonts (IBM Plex Sans/Mono) are self-hosted now
+  (`src/styles/fonts.css`, files in `public/fonts/`) rather than loaded from
+  `fonts.googleapis.com`/`fonts.gstatic.com` — this is what closed the scan's "Subresource
+  Integrity Attribute Missing" finding: Google's font CSS is generated per-browser, so a
+  real SRI hash pinned to it would be fragile and could break unpredictably; removing the
+  external dependency entirely is the actual fix, not a hash pinned to a moving target.
+- **Cookie flags the scan will still flag, correctly, as findings — but they're required by
+  this app's design, not bugs**:
+  - The `XSRF-TOKEN` cookie is deliberately **not** `HttpOnly` — Sanctum's SPA CSRF pattern
+    requires JavaScript to read it and echo it back as the `X-XSRF-TOKEN` header (see
+    `frontend/src/services/apiClient.js`). Setting `HttpOnly` on it would break login
+    entirely. The actual session cookie (`SESSION_HTTP_ONLY`) is `true` by default and
+    should stay that way — that's the one that matters.
+  - `SESSION_SAME_SITE=lax` (not `strict`) is required so the cookie rides along on the
+    cross-subdomain requests this app's own architecture depends on (§1 above).
+- **Not something to fix in code** — the scan's manual-review recommendations (SQL
+  injection, XSS, authentication, authorization, CSRF, business logic) are already
+  structurally addressed by this stack's defaults (Eloquent's query builder parameterizes
+  every query — no raw SQL string concatenation exists anywhere in this codebase; React
+  escapes all rendered output by default; every mutating route requires a Sanctum CSRF
+  token; every route is gated by the `permission:<slug>` middleware, see the API docs) but
+  were not re-audited line-by-line as part of this pass — treat the scan's own note that
+  "automated scanners can miss business-logic vulnerabilities" as still true here.
 
 ## 2. Backend
 
