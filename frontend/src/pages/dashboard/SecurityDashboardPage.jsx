@@ -19,9 +19,15 @@ import '@/components/dashboard/ActivityFeed.css';
 export default function SecurityDashboardPage() {
   useDocumentTitle('Dispatch gate');
 
+  // Orders are paid at the sales counter, on another screen — this one has no
+  // mutation of its own to learn from, so it polls, and re-checks whenever the
+  // gate terminal comes back into focus.
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.securityDashboard(),
     queryFn: () => dashboardApi.security(),
+    staleTime: 0,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
   });
 
   const kpis = data?.kpis;

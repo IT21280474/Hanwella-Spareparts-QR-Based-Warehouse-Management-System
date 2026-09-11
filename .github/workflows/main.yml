@@ -116,33 +116,48 @@ jobs:
     needs: changes
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: hanwella_wms_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: mbstring, pdo, pdo_sqlite, intl, gd
+          extensions: mbstring, pdo, pdo_mysql, intl, gd
           coverage: none
 
       - name: Install dependencies
         working-directory: backend
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
 
-      # In-memory sqlite for tests only — production keeps its own untouched
-      # mysql .env on the server, this never leaves the CI runner.
+      # phpunit.xml already hardcodes the test DB connection (127.0.0.1,
+      # hanwella_wms_test, root/root) to match the mysql service above — no
+      # need to touch .env's DB_* values, they're overridden during tests
+      # anyway. Only APP_KEY actually needs to be real.
       - name: Prepare test environment
         working-directory: backend
         run: |
           cp .env.example .env
-          echo "APP_KEY=" >> .env
           php artisan key:generate
-          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
-          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=:memory:/' .env
 
+      # Only tests/Feature exists in this repo — tests/Unit is declared in
+      # phpunit.xml but was never committed (git doesn't track empty
+      # directories), so running the full suite fails immediately.
       - name: Run tests
         working-directory: backend
-        run: php artisan test
+        run: php artisan test --testsuite=Feature
 
       # Ship source only. vendor/ installs fresh against the server's own
       # PHP build; .env, storage/, bootstrap/cache stay server-managed and
