@@ -118,6 +118,37 @@ it('returns a clean 404 for an unknown code instead of a server error', function
         ->assertJsonPath('message', 'No spare part is linked to that code.');
 });
 
+it('lists a found scan in recent scans, newest first, with who scanned it', function () {
+    $part = makePart();
+    $qr = app(QrService::class)->generateFor($part);
+    $staff = makeRoleUser(Role::WAREHOUSE_STAFF, ['name' => 'Scanner Staff']);
+
+    $this->actingAs($staff)->postJson('/api/v1/qr/scan', ['code' => $qr->code])->assertOk();
+
+    $this->getJson('/api/v1/qr/scans/recent')
+        ->assertOk()
+        ->assertJsonPath('data.0.code', $qr->code)
+        ->assertJsonPath('data.0.found', true)
+        ->assertJsonPath('data.0.part.id', $part->id)
+        ->assertJsonPath('data.0.user.name', 'Scanner Staff');
+
+    $this->assertDatabaseHas('audit_logs', ['action' => 'qr.scan', 'entity_id' => $part->id]);
+});
+
+it('lists an unmatched scan in recent scans too, marked not found', function () {
+    $staff = makeRoleUser(Role::WAREHOUSE_STAFF);
+
+    $this->actingAs($staff)->postJson('/api/v1/qr/scan', ['code' => 'SJL-99999'])->assertStatus(404);
+
+    $this->getJson('/api/v1/qr/scans/recent')
+        ->assertOk()
+        ->assertJsonPath('data.0.code', 'SJL-99999')
+        ->assertJsonPath('data.0.found', false)
+        ->assertJsonPath('data.0.part', null);
+
+    $this->assertDatabaseHas('audit_logs', ['action' => 'qr.scan', 'entity_id' => null]);
+});
+
 it('denies QR scanning to a role without scan_qr permission', function () {
     $viewer = makeRoleUser(Role::VIEWER);
 

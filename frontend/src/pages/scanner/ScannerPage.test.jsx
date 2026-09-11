@@ -27,7 +27,7 @@ vi.mock('@/store/toastStore', () => ({
 
 vi.mock('@/services/api', () => ({
   authApi: { me: vi.fn(), login: vi.fn(), logout: vi.fn() },
-  qrApi: { scan: vi.fn() },
+  qrApi: { scan: vi.fn(), recentScans: vi.fn().mockResolvedValue([]) },
 }));
 
 import { authApi, qrApi } from '@/services/api';

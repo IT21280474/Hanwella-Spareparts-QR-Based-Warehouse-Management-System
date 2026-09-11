@@ -5,16 +5,25 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Stock\QrScanRequest;
 use App\Http\Resources\PartResource;
+use App\Http\Resources\QrScanResource;
 use App\Models\Part;
 use App\Models\QrCode;
+use App\Models\QrScan;
+use App\Services\AuditLogger;
 use App\Services\QrService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class QrController extends Controller
 {
-    public function __construct(private readonly QrService $qr) {}
+    private const RECENT_SCANS_LIMIT = 20;
+
+    public function __construct(
+        private readonly QrService $qr,
+        private readonly AuditLogger $audit,
+    ) {}
 
     /**
      * Backfill identities for parts that do not yet hold one. Given a
@@ -41,19 +50,48 @@ class QrController extends Controller
     /**
      * Resolve a scanned or manually entered code to its part. The code is
      * never trusted as anything more than a lookup key.
+     *
+     * Every attempt — found or not — is recorded twice: a `QrScan` row (the
+     * fast read path for the Scanner page's "recent scans" panel) and one
+     * audit-log entry, since a scan is a real action a person took, not just
+     * an internal lookup.
      */
     public function scan(QrScanRequest $request): JsonResponse
     {
-        $part = $this->qr->resolve($request->validated()['code']);
+        $code = $request->validated()['code'];
+        $part = $this->qr->resolve($code);
+
+        QrScan::create([
+            'code' => $code,
+            'part_id' => $part?->id,
+            'user_id' => Auth::id(),
+            'found' => $part !== null,
+        ]);
 
         if ($part === null) {
+            $this->audit->log('qr.scan', null, [], [], "Scanned {$code} — no matching part.");
+
             return ApiResponse::error('No spare part is linked to that code.', 404);
         }
 
         $part->load(['category:id,name', 'supplier:id,name', 'qrCode']);
         $part->setAttribute('total_stock', (int) $part->inventory()->sum('quantity'));
 
+        $this->audit->log('qr.scan', $part, [], [], "Scanned {$code} · {$part->name}");
+
         return ApiResponse::success(new PartResource($part), 'Part resolved successfully.');
+    }
+
+    /** The Scanner page's own recent activity — every attempt, found or not. */
+    public function recentScans(): JsonResponse
+    {
+        $scans = QrScan::query()
+            ->with(['part:id,name,part_number', 'user:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(self::RECENT_SCANS_LIMIT)
+            ->get();
+
+        return ApiResponse::success(QrScanResource::collection($scans)->resolve(), 'Recent scans retrieved successfully.');
     }
 
     public function show(string $code): JsonResponse

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QrScanner from 'qr-scanner';
 import {
   CameraOff,
+  Check,
   Flashlight,
   Keyboard,
   Minus,
@@ -12,8 +13,10 @@ import {
   ScanLine,
   ShoppingCart,
   SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { qrApi } from '@/services/api';
+import { queryKeys } from '@/services/queryKeys';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { usePermission } from '@/hooks/usePermission';
 import { useCartStore } from '@/store/cartStore';
@@ -34,10 +37,11 @@ import {
   Spinner,
 } from '@/components/ui';
 import { AdjustStockModal } from '@/components/inventory/AdjustStockModal';
-import { money, number } from '@/utils/format';
+import { money, number, relativeDateTime } from '@/utils/format';
 import { normaliseCode } from '@/utils/qr';
 import { toApiError } from '@/utils/errors';
 import { stockStatusLabel, stockStatusTone } from '@/utils/status';
+import '@/components/dashboard/ActivityFeed.css';
 import './ScannerPage.css';
 
 /** Ignore a repeat decode of the same code inside this window. */
@@ -72,17 +76,25 @@ export default function ScannerPage() {
   const recent = useScanStore((state) => state.recent);
   const remember = useScanStore((state) => state.remember);
 
+  const queryClient = useQueryClient();
+  const scanLog = useQuery({
+    queryKey: queryKeys.qr.recentScans(),
+    queryFn: () => qrApi.recentScans(),
+  });
+
   const lookup = useMutation({
     mutationFn: (code) => qrApi.scan(code),
     onSuccess: ({ part }) => {
       setResult({ part });
       setQuantity(1);
       remember(part);
+      queryClient.invalidateQueries({ queryKey: queryKeys.qr.recentScans() });
     },
     onError: (error, code) => {
       const apiError = toApiError(error);
       if (apiError.isNotFound) {
         setResult({ notFound: code });
+        queryClient.invalidateQueries({ queryKey: queryKeys.qr.recentScans() });
         return;
       }
       setResult(null);
@@ -388,6 +400,40 @@ export default function ScannerPage() {
                         </span>
                         <span className="scanner__recent-qty num">{number(entry.quantity)}</span>
                       </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader title="Scan log" subtitle="Every attempt, across the whole team" />
+            <CardBody>
+              {scanLog.isLoading ? (
+                <p className="scanner__empty">Loading…</p>
+              ) : (scanLog.data ?? []).length === 0 ? (
+                <p className="scanner__empty">Nothing scanned by anyone yet.</p>
+              ) : (
+                <ul className="activity">
+                  {scanLog.data.map((entry) => (
+                    <li key={entry.id}>
+                      <div className="activity__row">
+                        <span
+                          className={['activity__mark', entry.found ? 'is-paid' : 'is-danger'].join(' ')}
+                          aria-hidden="true"
+                        >
+                          {entry.found ? <Check size={13} strokeWidth={2.2} /> : <X size={13} strokeWidth={2.2} />}
+                        </span>
+                        <span className="activity__body">
+                          <span className="activity__text mono">
+                            {entry.code} {entry.part ? `· ${entry.part.name}` : '· no match'}
+                          </span>
+                          <span className="activity__meta">
+                            {entry.user?.name || 'Unknown'} · {relativeDateTime(entry.created_at)}
+                          </span>
+                        </span>
+                      </div>
                     </li>
                   ))}
                 </ul>

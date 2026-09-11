@@ -55,9 +55,13 @@ php artisan key:generate
 php artisan migrate --force   # --force skips the "are you sure, this is production" prompt
 php artisan db:seed --class=RolePermissionSeeder   # roles/permissions are fixed reference data, safe to always seed
 # Do NOT run the full db:seed (UserSeeder, PartSeeder, ...) against production —
-# those create the development fixture accounts and sample parts (see root README §9).
-# Create real admin accounts individually, e.g. via `php artisan tinker` or a dedicated
-# artisan command, once one exists.
+# those create the development fixture accounts and sample parts (see root README §9),
+# every one sharing a single well-known password.
+
+php artisan wms:create-admin  # prompts for name/email/password (or pass --name= --email= --password=)
+# Creates one real ADMIN account. Every other account (Manager, Warehouse Staff, Sales
+# Person, Security, Viewer) is then created normally through Users → New account, signed
+# in as that admin — never by re-running UserSeeder.
 
 php artisan storage:link      # only needed if/when file uploads are stored on local disk
 php artisan config:cache
@@ -80,6 +84,16 @@ Production `.env` essentials beyond what local dev needs:
 
 Point the web server (Nginx/Apache/etc.) document root at `backend/public/`, same as any
 Laravel app.
+
+**The PHP application server must never be directly reachable from the internet** —
+only the reverse proxy (Nginx/Apache) should be. `bootstrap/app.php` trusts every proxy
+(`trustProxies(at: '*')`) so `X-Forwarded-For`/`X-Forwarded-Proto` are honoured — this is
+what makes `$request->ip()` (the audit log's `ip_address` column, and the per-IP
+rate limit on guest routes) resolve to the real visitor rather than the proxy's own
+loopback address. If that trust assumption is wrong — the app server *is* reachable
+directly — an attacker can forge those headers to spoof their IP in the audit trail and
+sidestep the rate limit; firewall the app server's port to only accept connections from
+the proxy.
 
 ## 3. Frontend
 

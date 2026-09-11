@@ -7,6 +7,10 @@ export const REPORT_TYPES = {
   INVENTORY: 'inventory',
   PAYMENTS: 'payments',
   LOW_STOCK: 'low-stock',
+  OUT_OF_STOCK: 'out-of-stock',
+  STOCK_IN: 'stock-in',
+  STOCK_OUT: 'stock-out',
+  USER_ACTIVITY: 'user-activity',
 };
 
 export const reportsApi = {

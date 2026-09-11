@@ -48,6 +48,11 @@
   color: var(--color-warning);
 }
 
+.activity__mark.is-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
 .activity__body {
   flex: 1;
   min-width: 0;

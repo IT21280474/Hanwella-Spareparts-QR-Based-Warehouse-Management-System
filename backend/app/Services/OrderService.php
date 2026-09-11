@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Exceptions\InsufficientStockException;
 use App\Models\Part;
+use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Models\StockMovement;
+use App\Notifications\OrderReadyForDispatch;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +40,7 @@ class OrderService
     public function __construct(
         private readonly StockService $stock,
         private readonly AuditLogger $audit,
+        private readonly NotificationDispatcher $notifications,
     ) {}
 
     /**
@@ -293,6 +296,8 @@ class OrderService
 
         $order->stock_deducted_at = now();
         $order->save();
+
+        $this->notifications->notifyRoles([Role::SECURITY, Role::ADMIN], new OrderReadyForDispatch($order));
     }
 
     /** Returns stock for every line of $order and clears the deducted marker. Only ever called when it was previously deducted. */

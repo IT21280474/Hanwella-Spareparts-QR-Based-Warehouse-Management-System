@@ -7,8 +7,10 @@ use App\Models\Inventory;
 use App\Models\InventoryAdjustment;
 use App\Models\Location;
 use App\Models\Part;
+use App\Models\Role;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
+use App\Notifications\LowStockAlert;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,7 @@ class StockService
 {
     public function __construct(
         private readonly AuditLogger $audit,
+        private readonly NotificationDispatcher $notifications,
     ) {}
 
     /**
@@ -118,6 +121,8 @@ class StockService
             $this->audit->log('stock.out', $part, ['quantity' => $before], ['quantity' => $after],
                 sprintf('Issued %d unit(s) of %s', $quantity, $part->part_number));
 
+            $this->notifyIfStockDropped($part, $row, $before, $after);
+
             return $movement;
         });
     }
@@ -185,6 +190,8 @@ class StockService
                 ['quantity' => $before],
                 ['quantity' => $after, 'adjustment_type' => $adjustmentType],
                 sprintf('%s: %+d unit(s) of %s', $adjustmentType, $delta, $part->part_number));
+
+            $this->notifyIfStockDropped($part, $row, $before, $after);
 
             return $adjustment;
         });
@@ -330,5 +337,41 @@ class StockService
         if ($quantity <= 0) {
             throw new InvalidArgumentException('Quantity must be greater than zero.');
         }
+    }
+
+    /**
+     * Alerts ADMIN/MANAGER only on a downward *crossing* into LOW or OUT —
+     * never on every subsequent stock-out while a part stays below its
+     * minimum, which would otherwise spam one alert per sale.
+     */
+    private function notifyIfStockDropped(Part $part, Inventory $row, int $before, int $after): void
+    {
+        if ($after >= $before) {
+            return;
+        }
+
+        $otherBins = Inventory::where('part_id', $part->id)->where('id', '!=', $row->id)->sum('quantity');
+        $statusBefore = $this->stockStatusFor($otherBins + $before, $part->min_stock);
+        $statusAfter = $this->stockStatusFor($otherBins + $after, $part->min_stock);
+
+        if ($statusAfter === $statusBefore) {
+            return;
+        }
+
+        if ($statusAfter === Part::OUT_OF_STOCK || $statusAfter === Part::LOW_STOCK) {
+            $this->notifications->notifyRoles(
+                [Role::ADMIN, Role::MANAGER],
+                new LowStockAlert($part, $statusAfter === Part::OUT_OF_STOCK, $otherBins + $after),
+            );
+        }
+    }
+
+    private function stockStatusFor(int $totalStock, int $minStock): string
+    {
+        return match (true) {
+            $totalStock <= 0 => Part::OUT_OF_STOCK,
+            $totalStock <= $minStock => Part::LOW_STOCK,
+            default => Part::IN_STOCK,
+        };
     }
 }

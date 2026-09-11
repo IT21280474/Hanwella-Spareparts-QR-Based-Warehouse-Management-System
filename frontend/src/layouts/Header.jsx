@@ -1,14 +1,12 @@
 import { useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Menu, PanelLeft, X } from 'lucide-react';
 import { titleForPath } from '@/constants/navigation';
-import { PERMISSIONS } from '@/constants/permissions';
-import { dashboardApi } from '@/services/api';
-import { queryKeys } from '@/services/queryKeys';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotificationsQuery, useMarkAllNotificationsRead, useMarkNotificationRead } from '@/hooks/queries/useNotifications';
 import { useUiStore } from '@/store/uiStore';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import { relativeDateTime } from '@/utils/format';
 import { GlobalSearch } from './GlobalSearch';
 import './Header.css';
 
@@ -18,7 +16,8 @@ import './Header.css';
  */
 export function Header({ crumb: crumbOverride, title: titleOverride }) {
   const { pathname } = useLocation();
-  const { user, can } = useAuth();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const openMobileNav = useUiStore((state) => state.openMobileNav);
   const notificationsOpen = useUiStore((state) => state.notificationsOpen);
@@ -32,17 +31,21 @@ export function Header({ crumb: crumbOverride, title: titleOverride }) {
 
   useOnClickOutside(panelRef, closeNotifications, notificationsOpen);
 
-  // Alerts ride along with the dashboard summary rather than adding a second
-  // endpoint for the same numbers.
-  const { data: summary } = useQuery({
-    queryKey: queryKeys.dashboard(),
-    queryFn: () => dashboardApi.summary(),
-    enabled: can(PERMISSIONS.VIEW_DASHBOARD),
-    staleTime: 60_000,
-  });
+  // Every signed-in user gets this — unlike the dashboard, there is no
+  // permission gate here: SECURITY has no view_dashboard, but still needs to
+  // hear about orders ready to dispatch.
+  const { data } = useNotificationsQuery();
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
 
-  const alerts = summary?.alerts ?? [];
-  const alertCount = alerts.length;
+  const notifications = data?.rows ?? [];
+  const unreadCount = data?.meta?.unread_count ?? 0;
+
+  const onOpenNotification = (notification) => {
+    if (!notification.read_at) markRead.mutate(notification.id);
+    closeNotifications();
+    if (notification.link) navigate(notification.link);
+  };
 
   return (
     <header className="header" data-noprint>
@@ -66,50 +69,55 @@ export function Header({ crumb: crumbOverride, title: titleOverride }) {
           type="button"
           className="header__bell"
           onClick={toggleNotifications}
-          aria-label={`Warehouse alerts${alertCount ? ` (${alertCount})` : ''}`}
+          aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
           aria-expanded={notificationsOpen}
         >
           <Bell size={17} strokeWidth={1.7} aria-hidden="true" />
-          {alertCount > 0 ? <span className="header__bell-count">{alertCount}</span> : null}
+          {unreadCount > 0 ? <span className="header__bell-count">{unreadCount}</span> : null}
         </button>
 
         {notificationsOpen ? (
           <div className="header__panel">
             <div className="header__panel-head">
-              <span className="header__panel-title">Warehouse alerts</span>
-              <button type="button" className="header__panel-close" onClick={closeNotifications} aria-label="Close alerts">
-                <X size={15} strokeWidth={1.8} aria-hidden="true" />
-              </button>
+              <span className="header__panel-title">Notifications</span>
+              <div className="header__panel-head-actions">
+                {unreadCount > 0 ? (
+                  <button
+                    type="button"
+                    className="header__panel-markall"
+                    onClick={() => markAllRead.mutate()}
+                    disabled={markAllRead.isPending}
+                  >
+                    Mark all read
+                  </button>
+                ) : null}
+                <button type="button" className="header__panel-close" onClick={closeNotifications} aria-label="Close notifications">
+                  <X size={15} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              </div>
             </div>
 
-            {alerts.length === 0 ? (
-              <p className="header__panel-empty">Nothing needs attention right now.</p>
-            ) : (
-              alerts.map((alert, index) =>
-                alert.link ? (
-                  <Link
-                    key={`${alert.text}-${index}`}
-                    to={alert.link}
-                    className="header__alert"
-                    onClick={closeNotifications}
+            <div className="header__panel-list">
+              {notifications.length === 0 ? (
+                <p className="header__panel-empty">Nothing new right now.</p>
+              ) : (
+                notifications.map((notification) => (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    className={['header__alert', notification.read_at ? '' : 'is-unread'].join(' ').trim()}
+                    onClick={() => onOpenNotification(notification)}
                   >
-                    <span className={`header__alert-dot header__alert-dot--${alert.level}`} aria-hidden="true" />
+                    <span className={`header__alert-dot header__alert-dot--${notification.level}`} aria-hidden="true" />
                     <span className="header__alert-body">
-                      <span className="header__alert-text">{alert.text}</span>
-                      <span className="header__alert-meta">{alert.meta}</span>
+                      <span className="header__alert-text">{notification.title}</span>
+                      {notification.body ? <span className="header__alert-meta">{notification.body}</span> : null}
+                      <span className="header__alert-meta">{relativeDateTime(notification.created_at)}</span>
                     </span>
-                  </Link>
-                ) : (
-                  <div key={`${alert.text}-${index}`} className="header__alert">
-                    <span className={`header__alert-dot header__alert-dot--${alert.level}`} aria-hidden="true" />
-                    <span className="header__alert-body">
-                      <span className="header__alert-text">{alert.text}</span>
-                      <span className="header__alert-meta">{alert.meta}</span>
-                    </span>
-                  </div>
-                ),
-              )
-            )}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         ) : null}
       </div>

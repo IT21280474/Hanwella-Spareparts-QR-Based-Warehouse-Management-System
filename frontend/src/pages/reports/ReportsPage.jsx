@@ -24,7 +24,7 @@ import {
   Th,
   Tr,
 } from '@/components/ui';
-import { formatDate, money, number } from '@/utils/format';
+import { formatDate, formatDateTime, money, number } from '@/utils/format';
 import { paymentLabel, paymentTone } from '@/utils/status';
 import './ReportsPage.css';
 
@@ -90,6 +90,54 @@ const REPORT_VIEWS = {
     ],
     footnote: 'Ordered by how far below minimum each part sits, so the most urgent restock is first.',
   },
+
+  [REPORT_TYPES.OUT_OF_STOCK]: {
+    label: 'Out of stock',
+    description: 'Parts at zero — a counter sale of these fails until restocked',
+    columns: [
+      { key: 'name', label: 'Spare part' },
+      { key: 'part_number', label: 'Part number', format: 'mono', width: 150 },
+      { key: 'min_stock', label: 'Minimum', format: 'number', align: 'right', width: 100 },
+      { key: 'sold_90d', label: 'Sold · 90d', format: 'number', align: 'right', width: 110 },
+    ],
+    footnote: 'Zero units on hand right now. Ordered by name.',
+  },
+
+  [REPORT_TYPES.STOCK_IN]: {
+    label: 'Stock in',
+    description: 'Goods received, by part',
+    columns: [
+      { key: 'name', label: 'Spare part' },
+      { key: 'part_number', label: 'Part number', format: 'mono', width: 150 },
+      { key: 'movements', label: 'Receipts', format: 'number', align: 'right', width: 100 },
+      { key: 'units', label: 'Units received', format: 'number', align: 'right', width: 130 },
+    ],
+    footnote: 'Manual goods receipts only — stock returned from a cancelled order is excluded.',
+  },
+
+  [REPORT_TYPES.STOCK_OUT]: {
+    label: 'Stock out',
+    description: 'Goods issued manually, by part',
+    columns: [
+      { key: 'name', label: 'Spare part' },
+      { key: 'part_number', label: 'Part number', format: 'mono', width: 150 },
+      { key: 'movements', label: 'Issues', format: 'number', align: 'right', width: 100 },
+      { key: 'units', label: 'Units issued', format: 'number', align: 'right', width: 120 },
+    ],
+    footnote: 'Manual stock-outs only — counter sales are excluded (see the Sales report for those).',
+  },
+
+  [REPORT_TYPES.USER_ACTIVITY]: {
+    label: 'User activity',
+    description: 'Audit-logged actions per account',
+    columns: [
+      { key: 'name', label: 'Person' },
+      { key: 'role', label: 'Role', width: 140 },
+      { key: 'actions', label: 'Actions', format: 'number', align: 'right', width: 100 },
+      { key: 'last_active', label: 'Last active', format: 'datetime', width: 160 },
+    ],
+    footnote: 'Counts every audit-logged action (logins, part/stock/order/user/settings changes) attributed to that account.',
+  },
 };
 
 const TABS = Object.entries(REPORT_VIEWS).map(([value, view]) => ({ value, label: view.label }));
@@ -105,6 +153,8 @@ function cell(row, column) {
       return number(value);
     case 'date':
       return formatDate(value);
+    case 'datetime':
+      return value ? formatDateTime(value) : '—';
     case 'mono':
       return <span className="mono">{value || '—'}</span>;
     case 'payment':

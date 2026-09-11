@@ -2,7 +2,7 @@
 
 Base URL: `{VITE_API_URL}/api/v1` (e.g. `http://localhost:8000/api/v1` in development).
 
-Source of truth: `backend/routes/api.php` (68 routes). This document groups them by
+Source of truth: `backend/routes/api.php` (74 routes). This document groups them by
 resource; every method/URL/permission pair below is read directly from that file.
 
 ## Conventions
@@ -163,6 +163,7 @@ listing filter). `meta` additionally carries `units_on_hand`, `needs_attention`,
 |---|---|---|---|
 | POST | `/qr/generate` | `print_labels` | `part_id?` — omit to backfill every part missing an identity (max 500/call) |
 | POST | `/qr/scan` | `scan_qr` | body: `code` (required) |
+| GET | `/qr/scans/recent` | `scan_qr` | last 20 scan attempts, found or not |
 | GET | `/qr/labels` | `print_labels` | `?from=&count=&layout=` — see below |
 | POST | `/qr/labels/printed` | `print_labels` | body: `codes: [string, ...]` — marks labels printed |
 | GET | `/qr/{code}` | `view_inventory` **or** `scan_qr` | resolves a code path param instead of a body |
@@ -171,6 +172,10 @@ listing filter). `meta` additionally carries `units_on_hand`, `needs_attention`,
 not a validation error) for an unrecognized code — the scanned/typed string is never
 trusted as anything beyond a lookup key; the database is the sole authority on whether it
 exists. On success, `data` is a full `PartResource` with live `quantity`.
+
+Every `qr/scan` attempt — found or not — writes a `QrScan` row and an audit-log entry
+(`qr.scan`). `GET /qr/scans/recent` reads that log back: `id, code, found, part: {id,name,
+part_number}|null, user: {id,name}, created_at`, newest first.
 
 `GET /qr/labels?from=1&count=40`: returns `count` consecutive label payloads starting at
 sequence `from` (max `count` = `wms.qr.max_batch`, 200), whether or not each sequence number
@@ -361,9 +366,41 @@ while any other part still references it.
 | GET | `/reports/{type}` | `view_reports` |
 | GET | `/reports/{type}/export` | `export_reports` |
 
-`{type}` is one of `sales`, `inventory`, `payments`, `low-stock`. Both accept `?from=&to=`
-(date range). `export` streams a CSV of the same rows the `show` endpoint returns, using
-each report's own column set — never regenerated from scratch on the frontend.
+`{type}` is one of `sales`, `inventory`, `payments`, `low-stock`, `out-of-stock`,
+`stock-in`, `stock-out`, `user-activity`. `export` streams a CSV of the same rows the
+`show` endpoint returns, using each report's own column set — never regenerated from
+scratch on the frontend. `?from=&to=` (date range) is honoured by `sales`, `payments`,
+`stock-in`, `stock-out` and `user-activity`; `inventory`, `low-stock` and `out-of-stock`
+are always a live snapshot and ignore it. `stock-in`/`stock-out` cover manual receipts/
+issues only (`StockMovement::STOCK_IN`/`STOCK_OUT`) — counter sales and cancellation
+returns are deliberately excluded (see the `sales` report for those). `user-activity`
+aggregates `audit_logs` per account.
+
+## Notifications
+
+| Method | URL | Permission | Notes |
+|---|---|---|---|
+| GET | `/notifications` | — (any signed-in user) | own inbox only, paginated, newest first |
+| POST | `/notifications/{id}/read` | — | marks one of the caller's own as read |
+| POST | `/notifications/read-all` | — | marks every unread one as read |
+
+Built on Laravel's own notification system (`Notifiable` on `User`, the standard
+`database` channel/table) rather than a hand-rolled inbox — `$user->notifications`,
+`unreadNotifications`, `markAsRead()` all just work. No permission middleware gates
+these routes deliberately: every account, including one like SECURITY with no
+`view_dashboard`, still needs to see what was sent to it. `GET /notifications` adds
+`meta.unread_count`. `NotificationResource`: `id, type, level (info|warning|danger),
+title, body, link, read_at, created_at`.
+
+Two triggers exist today, both fire once — on the crossing, not on every subsequent
+event while the condition holds:
+- `LowStockAlert` (`stock.low` / `stock.out_of_stock`) — fired from `StockService` the
+  moment a part's total stock crosses downward into `LOW_STOCK` or `OUT_OF_STOCK`
+  (manual stock-out, a negative adjustment, or a sale — all route through the same
+  `stockOut()`). Sent to `ADMIN` and `MANAGER`.
+- `OrderReadyForDispatch` (`order.ready_for_dispatch`) — fired from `OrderService` the
+  moment an order's stock is deducted (i.e. it becomes `ready_for_dispatch`). Sent to
+  `SECURITY` and `ADMIN`.
 
 ## Settings
 

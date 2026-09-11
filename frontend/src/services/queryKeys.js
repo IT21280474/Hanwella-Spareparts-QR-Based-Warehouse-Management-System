@@ -32,6 +32,7 @@ export const queryKeys = {
   qr: {
     labels: (params) => ['qr', 'labels', params],
     code: (code) => ['qr', 'code', code],
+    recentScans: () => ['qr', 'recent-scans'],
   },
 
   reference: {
@@ -57,4 +58,6 @@ export const queryKeys = {
   reports: (type, params) => ['reports', type, params],
 
   settings: () => ['settings'],
+
+  notifications: (params) => ['notifications', params],
 };

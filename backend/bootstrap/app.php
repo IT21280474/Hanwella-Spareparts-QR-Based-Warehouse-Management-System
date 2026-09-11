@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(append: [
             HandleCors::class,
+            ThrottleRequests::class.':api',
         ]);
 
         $middleware->alias([
@@ -44,6 +45,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Session cookies must never ride along on a cross-site request.
         $middleware->trustHosts(at: static fn (): array => []);
+
+        // The deployment guide puts Nginx/Apache in front of PHP-FPM as a
+        // reverse proxy — without this, every request's IP resolves to the
+        // proxy's own loopback address, silently breaking the audit log's
+        // `ip_address` column and collapsing every guest's login-throttle
+        // bucket into one shared one. Safe only because the app server
+        // itself must never be reachable directly from the internet (see
+        // docs/deployment/README.md §1) — trusting '*' here assumes that.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // A warehouse worker asking to remove more stock than is on hand is an

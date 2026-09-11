@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
@@ -64,6 +65,11 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard/security', [DashboardController::class, 'security'])
             ->middleware('permission:dispatch_orders');
 
+        // ---- Notifications: a user's own inbox, no extra permission beyond being signed in ----
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'read']);
+
         // ---- Parts (catalogue CRUD) ----
         Route::middleware('permission:view_inventory')->group(function () {
             Route::get('parts', [PartController::class, 'index']);
@@ -84,6 +90,7 @@ Route::prefix('v1')->group(function () {
         // ---- QR ----
         Route::post('qr/generate', [QrController::class, 'generate'])->middleware('permission:print_labels');
         Route::post('qr/scan', [QrController::class, 'scan'])->middleware('permission:scan_qr');
+        Route::get('qr/scans/recent', [QrController::class, 'recentScans'])->middleware('permission:scan_qr');
         Route::get('qr/labels', [QrController::class, 'labels'])->middleware('permission:print_labels');
         Route::post('qr/labels/printed', [QrController::class, 'markPrinted'])->middleware('permission:print_labels');
         Route::get('qr/{code}', [QrController::class, 'show'])->middleware('permission:view_inventory,scan_qr');

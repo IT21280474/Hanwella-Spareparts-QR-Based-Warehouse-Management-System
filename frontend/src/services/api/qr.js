@@ -21,6 +21,12 @@ export const qrApi = {
     return data;
   },
 
+  /** Every scan attempt logged server-side — found or not, whoever made it. */
+  async recentScans() {
+    const { data } = await http.get('/qr/scans/recent');
+    return data ?? [];
+  },
+
   /** Label payloads for a print run: from sequence, count and layout. */
   async labels(params) {
     const { data, meta } = await http.get('/qr/labels', { params: cleanParams(params) });

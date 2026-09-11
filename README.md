@@ -217,6 +217,11 @@ not use these in production; deactivate or replace them before go-live.**
 Password for all: the value of `DEV_SEED_PASSWORD` in `backend/.env`, or `password` if
 that variable is left unset.
 
+For a real deployment, do not seed these at all — run `php artisan wms:create-admin` to
+create one genuine ADMIN account with its own password, then add every other account
+through Users → New account once signed in as that admin. See
+[`docs/deployment/README.md`](docs/deployment/README.md) §2.
+
 ## 10. QR workflow
 
 - **Format**: `<prefix>-<padded sequence>` — default `SJL-00001` … `SJL-01000`, configured by

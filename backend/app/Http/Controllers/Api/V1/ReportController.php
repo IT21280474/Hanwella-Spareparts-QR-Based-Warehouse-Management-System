@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class ReportController extends Controller
 {
-    private const TYPES = ['sales', 'inventory', 'payments', 'low-stock'];
+    private const TYPES = [
+        'sales', 'inventory', 'payments', 'low-stock',
+        'out-of-stock', 'stock-in', 'stock-out', 'user-activity',
+    ];
 
     public function __construct(private readonly ReportService $reports) {}
 

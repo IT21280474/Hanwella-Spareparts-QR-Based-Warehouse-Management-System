@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\Part;
 use App\Models\SalesOrder;
 use App\Models\StockMovement;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * The four reports. Each returns the same shape — `kpis`, `columns`, `rows`,
+ * Eight reports. Each returns the same shape — `kpis`, `columns`, `rows`,
  * `footnote` — so {@see \App\Http\Controllers\Api\V1\ReportController} stays
  * a thin dispatcher and the CSV export can walk any of them generically from
  * `columns` + `rows` without knowing what report produced them.
@@ -23,6 +24,10 @@ class ReportService
             'inventory' => $this->inventory(),
             'payments' => $this->payments($from, $to),
             'low-stock' => $this->lowStock(),
+            'out-of-stock' => $this->outOfStock(),
+            'stock-in' => $this->stockMovementReport(StockMovement::STOCK_IN, $from, $to),
+            'stock-out' => $this->stockMovementReport(StockMovement::STOCK_OUT, $from, $to),
+            'user-activity' => $this->userActivity($from, $to),
             default => throw new InvalidArgumentException("Unknown report [{$type}]."),
         };
     }
@@ -181,6 +186,115 @@ class ReportService
         ];
     }
 
+    /** Parts sitting at zero, not just at-or-below-minimum — the subset of low-stock that blocks a sale outright. */
+    private function outOfStock(): array
+    {
+        $parts = Part::query()
+            ->withStock()
+            ->havingRaw('COALESCE(total_stock, 0) = 0')
+            ->orderBy('parts.name')
+            ->get();
+
+        $sold = StockMovement::query()
+            ->where('type', StockMovement::SALE)
+            ->where('created_at', '>=', now()->subDays(90))
+            ->whereIn('part_id', $parts->pluck('id'))
+            ->selectRaw('part_id, SUM(-quantity) as sold')
+            ->groupBy('part_id')
+            ->pluck('sold', 'part_id');
+
+        $rows = $parts->map(fn ($part) => [
+            'name' => $part->name,
+            'part_number' => $part->part_number,
+            'min_stock' => $part->min_stock,
+            'sold_90d' => (int) ($sold[$part->id] ?? 0),
+        ])->all();
+
+        return [
+            'kpis' => [
+                ['label' => 'Out of stock', 'value' => number_format(count($rows)), 'sub' => 'parts at zero', 'tone' => count($rows) > 0 ? 'danger' : 'ink'],
+                ['label' => 'Sold in last 90d', 'value' => number_format(array_sum(array_column($rows, 'sold_90d'))), 'sub' => 'units, while still out'],
+                ['label' => 'Blocking a sale', 'value' => number_format(count($rows)), 'sub' => 'right now'],
+            ],
+            'rows' => $rows,
+            'footnote' => 'Zero units on hand — a counter sale of any of these fails until restocked. Ordered by name.',
+        ];
+    }
+
+    /**
+     * Shared shape for the Stock In and Stock Out reports — same query,
+     * different `$type` and sign (a stock-out's `quantity` column is stored
+     * negative, so it's summed as `-quantity` to report a positive count).
+     */
+    private function stockMovementReport(string $type, ?string $from, ?string $to): array
+    {
+        $isOut = $type === StockMovement::STOCK_OUT;
+
+        $rows = StockMovement::query()
+            ->join('parts', 'parts.id', '=', 'stock_movements.part_id')
+            ->where('stock_movements.type', $type)
+            ->when($from, fn ($q) => $q->where('stock_movements.created_at', '>=', $from.' 00:00:00'))
+            ->when($to, fn ($q) => $q->where('stock_movements.created_at', '<=', $to.' 23:59:59'))
+            ->groupBy('parts.id', 'parts.name', 'parts.part_number')
+            ->selectRaw('parts.id as part_id, parts.name, parts.part_number, COUNT(*) as movements, SUM('.($isOut ? '-' : '').'stock_movements.quantity) as units')
+            ->orderByDesc('units')
+            ->get()
+            ->map(fn ($row) => [
+                'name' => $row->name,
+                'part_number' => $row->part_number,
+                'movements' => (int) $row->movements,
+                'units' => (int) $row->units,
+            ])
+            ->all();
+
+        $totalMovements = array_sum(array_column($rows, 'movements'));
+        $totalUnits = array_sum(array_column($rows, 'units'));
+        $label = $isOut ? 'issued' : 'received';
+
+        return [
+            'kpis' => [
+                ['label' => $isOut ? 'Issues' : 'Receipts', 'value' => number_format($totalMovements), 'sub' => 'in this period'],
+                ['label' => "Units {$label}", 'value' => number_format($totalUnits), 'sub' => 'across every part'],
+                ['label' => 'Parts moved', 'value' => number_format(count($rows)), 'sub' => 'distinct parts'],
+                ['label' => 'Average per '.($isOut ? 'issue' : 'receipt'), 'value' => number_format($totalMovements > 0 ? $totalUnits / $totalMovements : 0, 1), 'sub' => 'units'],
+            ],
+            'rows' => $rows,
+            'footnote' => $isOut
+                ? 'Manual stock-outs only — counter sales are excluded (see the Sales report for those).'
+                : 'Manual goods receipts only — stock returned from a cancelled order is excluded.',
+        ];
+    }
+
+    private function userActivity(?string $from, ?string $to): array
+    {
+        $rows = AuditLog::query()
+            ->join('users', 'users.id', '=', 'audit_logs.user_id')
+            ->leftJoin('roles', 'roles.id', '=', 'users.role_id')
+            ->when($from, fn ($q) => $q->where('audit_logs.created_at', '>=', $from.' 00:00:00'))
+            ->when($to, fn ($q) => $q->where('audit_logs.created_at', '<=', $to.' 23:59:59'))
+            ->groupBy('users.id', 'users.name', 'roles.name')
+            ->selectRaw('users.id as user_id, users.name, roles.name as role, COUNT(*) as actions, MAX(audit_logs.created_at) as last_active')
+            ->orderByDesc('actions')
+            ->get()
+            ->map(fn ($row) => [
+                'name' => $row->name,
+                'role' => $row->role,
+                'actions' => (int) $row->actions,
+                'last_active' => $row->last_active,
+            ])
+            ->all();
+
+        return [
+            'kpis' => [
+                ['label' => 'Active users', 'value' => number_format(count($rows)), 'sub' => 'logged at least one action'],
+                ['label' => 'Total actions', 'value' => number_format(array_sum(array_column($rows, 'actions'))), 'sub' => 'in this period'],
+                ['label' => 'Most active', 'value' => $rows[0]['name'] ?? '—', 'sub' => $rows[0] ? number_format($rows[0]['actions']).' actions' : ''],
+            ],
+            'rows' => $rows,
+            'footnote' => 'Counts every audit-logged action (logins, part/stock/order/user/settings changes) attributed to that account.',
+        ];
+    }
+
     /** @return list<string> */
     public function columnsFor(string $type): array
     {
@@ -189,6 +303,9 @@ class ReportService
             'inventory' => ['category', 'parts', 'units', 'stock_value', 'cost_value'],
             'payments' => ['payment_status', 'orders', 'total', 'paid', 'outstanding'],
             'low-stock' => ['name', 'part_number', 'quantity', 'min_stock', 'sold_90d'],
+            'out-of-stock' => ['name', 'part_number', 'min_stock', 'sold_90d'],
+            'stock-in', 'stock-out' => ['name', 'part_number', 'movements', 'units'],
+            'user-activity' => ['name', 'role', 'actions', 'last_active'],
             default => throw new InvalidArgumentException("Unknown report [{$type}]."),
         };
     }
