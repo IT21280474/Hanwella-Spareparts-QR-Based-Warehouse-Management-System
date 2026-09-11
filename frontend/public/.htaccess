@@ -15,8 +15,10 @@
 #     to real inline style="" attributes, which CSP has no nonce/hash story
 #     for in a client-rendered SPA
 #   - img-src allows the API's own origin (part photos are served from
-#     there) and data: (QR codes are rendered client-side as inline SVG
-#     data URIs — see src/utils/qr.js)
+#     there), data: (QR codes are rendered client-side as inline SVG data
+#     URIs — see src/utils/qr.js), and blob: (the Add/Edit spare part form's
+#     local photo preview, before it's uploaded, is a blob: URL from
+#     URL.createObjectURL — see src/pages/inventory/PartFormPage.jsx)
 #   - connect-src allows the API origin, for every XHR/fetch call
 #   - worker-src allows blob:, which the QR scanner library may spin its
 #     decode worker up from depending on how it's bundled
@@ -37,7 +39,7 @@
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
   Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=()"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api-hanwella-spareparts.eagleeyetaxi.com; font-src 'self'; connect-src 'self' https://api-hanwella-spareparts.eagleeyetaxi.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api-hanwella-spareparts.eagleeyetaxi.com; font-src 'self'; connect-src 'self' https://api-hanwella-spareparts.eagleeyetaxi.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
 
   # Hashed filenames (Vite's build output) can be cached forever — a new
   # deploy ships new filenames, never reuses an old one with different
