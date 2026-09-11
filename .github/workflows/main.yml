@@ -1,0 +1,199 @@
+name: CI / Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - ".github/workflows/main.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/main.yml'
+            backend:
+              - 'backend/**'
+              - '.github/workflows/main.yml'
+
+  # ---------------------------------------------------------------------
+  # Frontend: lint, build and deploy (React + Vite SPA)
+  # ---------------------------------------------------------------------
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ vars.HANWELLA_VITE_API_URL || 'https://api-hanwella-spareparts.eagleeyetaxi.com' }}
+          VITE_CURRENCY: LKR
+        run: npm run build
+
+      # This exact bug (assets 404ing site-wide) broke this project and the
+      # one before it via a bad .htaccess. Since frontend/public/.htaccess
+      # is now version-controlled and lands in dist/ verbatim, fail loudly
+      # if it ever regresses instead of shipping a blank page.
+      - name: Guard against the assets-blocking .htaccess bug
+        working-directory: frontend
+        run: |
+          if grep -qi "assets.*R=404" dist/.htaccess 2>/dev/null; then
+            echo "::error::dist/.htaccess blocks /assets/ — fix frontend/public/.htaccess."
+            exit 1
+          fi
+          echo ".htaccess OK"
+
+      - name: Deploy to VPS
+        if: ${{ vars.SERVER_HOST != '' }}
+        uses: burnett01/rsync-deployments@v8
+        with:
+          switches: -avz --delete
+          path: frontend/dist/
+          remote_path: ${{ vars.HANWELLA_WEB_REMOTE_PATH }}
+          remote_host: ${{ vars.SERVER_HOST }}
+          remote_user: ${{ vars.SERVER_USER }}
+          remote_port: ${{ vars.SERVER_PORT || 22 }}
+          remote_key: ${{ secrets.ROOT_SSH_KEY }}
+
+      # rsync runs as root; cPanel's suexec PHP/Apache runs as eagleeyetaxi.
+      # Without this, the account can't read/serve what root just wrote.
+      - name: Fix ownership after root rsync
+        if: ${{ vars.SERVER_HOST != '' }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SERVER_USER }}
+          port: ${{ vars.SERVER_PORT || 22 }}
+          key: ${{ secrets.ROOT_SSH_KEY }}
+          script: chown -R eagleeyetaxi:eagleeyetaxi ${{ vars.HANWELLA_WEB_REMOTE_PATH }}
+
+      - name: Smoke test — confirm the deployed JS bundle is actually reachable
+        if: ${{ vars.SERVER_HOST != '' }}
+        run: |
+          JS=$(grep -o '/assets/index-[^"]*\.js' frontend/dist/index.html | head -1)
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://hanwella-spareparts.eagleeyetaxi.com${JS}")
+          echo "Asset check: $JS -> $CODE"
+          [ "$CODE" = "200" ] || { echo "::error::Deployed JS returned $CODE — site is likely blank."; exit 1; }
+
+  # ---------------------------------------------------------------------
+  # Backend: test, deploy, migrate (Laravel API)
+  # ---------------------------------------------------------------------
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, pdo, pdo_sqlite, intl, gd
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: backend
+        run: composer install --prefer-dist --no-progress
+
+      # In-memory sqlite for tests only — production keeps its own untouched
+      # mysql .env on the server, this never leaves the CI runner.
+      - name: Prepare test environment
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          echo "APP_KEY=" >> .env
+          php artisan key:generate
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=:memory:/' .env
+
+      - name: Run tests
+        working-directory: backend
+        run: php artisan test
+
+      # Ship source only. vendor/ installs fresh against the server's own
+      # PHP build; .env, storage/, bootstrap/cache stay server-managed and
+      # are never touched by CI.
+      - name: Deploy to VPS
+        if: ${{ vars.SERVER_HOST != '' }}
+        uses: burnett01/rsync-deployments@v8
+        with:
+          switches: >-
+            -avz --delete
+            --exclude=".env"
+            --exclude="/vendor"
+            --exclude="/storage"
+            --exclude="/bootstrap/cache"
+          path: backend/
+          remote_path: ${{ vars.HANWELLA_API_REMOTE_PATH }}
+          remote_host: ${{ vars.SERVER_HOST }}
+          remote_user: ${{ vars.SERVER_USER }}
+          remote_port: ${{ vars.SERVER_PORT || 22 }}
+          remote_key: ${{ secrets.ROOT_SSH_KEY }}
+
+      - name: Install deps, migrate, cache and fix ownership
+        if: ${{ vars.SERVER_HOST != '' }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SERVER_USER }}
+          port: ${{ vars.SERVER_PORT || 22 }}
+          key: ${{ secrets.ROOT_SSH_KEY }}
+          script: |
+            set -e
+            PHP=/opt/cpanel/ea-php82/root/usr/bin/php
+            cd ${{ vars.HANWELLA_API_REMOTE_PATH }}
+
+            $PHP /usr/local/bin/composer install --no-dev --optimize-autoloader --ignore-platform-reqs --no-interaction
+
+            $PHP artisan down || true
+            $PHP artisan migrate --force
+            $PHP artisan config:cache
+            $PHP artisan route:cache
+            $PHP artisan storage:link || true
+            $PHP artisan up
+
+            chown -R eagleeyetaxi:eagleeyetaxi ${{ vars.HANWELLA_API_REMOTE_PATH }}
+            chmod -R 775 storage bootstrap/cache
+
+      # Catches exactly the missing-APP_KEY class of bug we hit manually —
+      # if the deploy leaves the site 500ing, fail the pipeline, don't ship it silently.
+      - name: Smoke test — confirm the API didn't come back as a 500
+        if: ${{ vars.SERVER_HOST != '' }}
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api-hanwella-spareparts.eagleeyetaxi.com/)
+          echo "API root -> $CODE"
+          [ "$CODE" = "200" ] || { echo "::error::API returned $CODE — check APP_KEY/session config."; exit 1; }
