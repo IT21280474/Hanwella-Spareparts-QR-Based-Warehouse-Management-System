@@ -127,7 +127,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
 
       # In-memory sqlite for tests only — production keeps its own untouched
       # mysql .env on the server, this never leaves the CI runner.
