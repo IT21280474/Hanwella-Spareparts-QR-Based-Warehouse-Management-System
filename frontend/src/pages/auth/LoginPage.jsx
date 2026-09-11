@@ -7,6 +7,7 @@ import { Button, Field, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { toApiError } from '@/utils/errors';
+import { homePathFor } from '@/constants/navigation';
 import './Auth.css';
 
 const schema = z.object({
@@ -41,8 +42,8 @@ export default function LoginPage() {
   const onSubmit = async (values) => {
     setFormError('');
     try {
-      await login(values);
-      navigate(location.state?.from?.pathname || '/dashboard', { replace: true });
+      const user = await login(values);
+      navigate(location.state?.from?.pathname || homePathFor(user), { replace: true });
     } catch (error) {
       const apiError = toApiError(error);
 

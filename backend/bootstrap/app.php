@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\DispatchConflictException;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Middleware\EnsurePermission;
 use App\Support\ApiResponse;
@@ -50,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // expected, routine rejection (409), not a technical failure — logging
         // it at ERROR with a full stack trace would drown real errors in noise.
         $exceptions->level(InsufficientStockException::class, LogLevel::WARNING);
+        $exceptions->level(DispatchConflictException::class, LogLevel::WARNING);
 
         // Every API failure leaves through the same envelope. Nothing here
         // ever leaks a stack trace: the framework's debug renderer is bypassed
@@ -83,7 +85,8 @@ return Application::configure(basePath: dirname(__DIR__))
                     404,
                 ),
 
-                $e instanceof InsufficientStockException => ApiResponse::error(
+                $e instanceof InsufficientStockException,
+                $e instanceof DispatchConflictException => ApiResponse::error(
                     $e->getMessage(),
                     409,
                 ),

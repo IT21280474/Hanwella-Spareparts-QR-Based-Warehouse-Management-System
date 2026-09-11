@@ -25,6 +25,9 @@ export const PERMISSIONS = {
 
   MANAGE_USERS: 'manage_users',
   MANAGE_SETTINGS: 'manage_settings',
+
+  VIEW_YARD_STOCK: 'view_yard_stock',
+  DISPATCH_ORDERS: 'dispatch_orders',
 };
 
 export const ROLES = {
@@ -32,4 +35,5 @@ export const ROLES = {
   MANAGER: 'MANAGER',
   WAREHOUSE_STAFF: 'WAREHOUSE_STAFF',
   VIEWER: 'VIEWER',
+  SECURITY: 'SECURITY',
 };

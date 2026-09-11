@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, Check, Clock, Package, Printer, ReceiptText } from 'lucide-react';
+import { ArrowLeft, Ban, Check, Clock, Package, Printer, ReceiptText, Truck } from 'lucide-react';
 import { useCancelOrder, useOrderQuery, useUpdateOrderPayment } from '@/hooks/queries/useOrders';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { usePermission } from '@/hooks/usePermission';
 import { toast } from '@/store/toastStore';
 import { PERMISSIONS } from '@/constants/permissions';
-import { PAYMENT_MODE_LABEL, PAYMENT_STATUS } from '@/constants/options';
+import { PAYMENT_MODE_LABEL, PAYMENT_STATUS, YARD_STATUS } from '@/constants/options';
 import {
   Badge,
   Button,
@@ -38,6 +38,7 @@ function timelineFor(order) {
   const cancelled = order.payment_status === PAYMENT_STATUS.CANCELLED;
   const settled = order.payment_status === PAYMENT_STATUS.PAID;
   const partial = order.payment_status === PAYMENT_STATUS.PARTIALLY_PAID;
+  const dispatched = order.yard_status === YARD_STATUS.DISPATCHED;
 
   return [
     { label: 'Order placed', detail: formatDateTime(order.ordered_at), state: 'done', icon: ReceiptText },
@@ -62,6 +63,18 @@ function timelineFor(order) {
       detail: cancelled ? 'Units returned to stock' : 'Ready to print',
       state: cancelled ? 'undone' : settled ? 'done' : 'todo',
       icon: cancelled ? Ban : Printer,
+    },
+    {
+      label: dispatched ? 'Dispatched from yard' : settled ? 'In yard — awaiting dispatch' : 'Yard dispatch',
+      detail: dispatched
+        ? `${formatDateTime(order.dispatched_at)}${order.dispatched_by?.name ? ` · by ${order.dispatched_by.name}` : ''}`
+        : cancelled
+          ? 'Cancelled orders never enter the yard'
+          : settled
+            ? 'Security can release it at the gate'
+            : 'Enters the yard once fully paid',
+      state: cancelled ? 'undone' : dispatched ? 'done' : settled ? 'current' : 'todo',
+      icon: Truck,
     },
   ];
 }
@@ -96,6 +109,9 @@ export default function OrderDetailPage() {
   }
 
   const cancelled = order?.payment_status === PAYMENT_STATUS.CANCELLED;
+  // Once the goods have left the yard the order is closed: the API refuses
+  // payment changes and cancellation, so the controls are not offered.
+  const dispatched = order?.yard_status === YARD_STATUS.DISPATCHED;
 
   const setPaymentStatus = (status) => {
     updatePayment.mutate(
@@ -151,6 +167,11 @@ export default function OrderDetailPage() {
                   <Badge tone={paymentTone(order.payment_status)} dot>
                     {paymentLabel(order.payment_status)}
                   </Badge>
+                  {dispatched ? (
+                    <Badge tone="info" dot>
+                      Dispatched
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="order__meta">
                   {formatDateTime(order.ordered_at)} · {order.customer_name || 'Walk-in customer'}
@@ -169,7 +190,7 @@ export default function OrderDetailPage() {
                 </Button>
               </Link>
 
-              {can(PERMISSIONS.CREATE_STOCK_OUT) && !cancelled ? (
+              {can(PERMISSIONS.CREATE_STOCK_OUT) && !cancelled && !dispatched ? (
                 <>
                   {order.payment_status !== PAYMENT_STATUS.PAID ? (
                     <Button

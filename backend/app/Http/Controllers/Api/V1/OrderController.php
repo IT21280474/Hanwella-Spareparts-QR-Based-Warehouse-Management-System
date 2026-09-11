@@ -75,7 +75,7 @@ class OrderController extends Controller
 
     public function show(SalesOrder $order): JsonResponse
     {
-        $order->load(['cashier:id,name', 'items.part' => fn ($q) => $q->withStock()]);
+        $order->load(['cashier:id,name', 'dispatchedBy:id,name', 'items.part' => fn ($q) => $q->withStock()]);
 
         return ApiResponse::success(new SalesOrderResource($order), 'Order retrieved successfully.');
     }

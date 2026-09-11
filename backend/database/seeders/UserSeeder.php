@@ -21,6 +21,7 @@ class UserSeeder extends Seeder
         ['Ruwan Perera', 'ruwan@hanwellaspares.lk', Role::MANAGER],
         ['Kasun Adikari', 'kasun@hanwellaspares.lk', Role::WAREHOUSE_STAFF],
         ['Nimali Silva', 'nimali@hanwellaspares.lk', Role::VIEWER],
+        ['Yard Security', 'security@hanwellaspares.lk', Role::SECURITY],
     ];
 
     public function run(): void

@@ -52,6 +52,16 @@ class AuthController extends Controller
             ]);
         }
 
+        // The Security portal is one session system with a narrower door: the
+        // same credentials and cookie, but only yard-gate accounts get in.
+        if (($credentials['portal'] ?? null) === LoginRequest::PORTAL_SECURITY && ! $user->hasPermission('view_yard_stock')) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'This account does not have Security access. Use the main warehouse sign-in instead.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         $user->forceFill(['last_login_at' => now()])->save();

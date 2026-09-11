@@ -15,6 +15,16 @@ export function money(amount) {
   return `${CURRENCY} ${Math.round(value).toLocaleString('en-US')}`;
 }
 
+/**
+ * `Rs 250,000.00` — to the cent. For figures someone acts on at the yard gate,
+ * where rounding a Rs 0.40 balance down to "Rs 0" would misstate it.
+ */
+export function moneyExact(amount) {
+  const value = Number(amount);
+  const safe = Number.isFinite(value) ? value : 0;
+  return `${CURRENCY} ${safe.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 /** Compact form for KPI tiles: 1.24M / 86K / 940. */
 export function shortNumber(amount) {
   const value = Number(amount) || 0;

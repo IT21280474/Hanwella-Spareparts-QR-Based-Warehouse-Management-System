@@ -1,4 +1,11 @@
-import { STOCK_STATUS, STOCK_STATUS_LABEL, PAYMENT_STATUS, PAYMENT_STATUS_LABEL } from '@/constants/options';
+import {
+  STOCK_STATUS,
+  STOCK_STATUS_LABEL,
+  PAYMENT_STATUS,
+  PAYMENT_STATUS_LABEL,
+  YARD_STATUS,
+  YARD_STATUS_LABEL,
+} from '@/constants/options';
 
 /**
  * Derive the stock status of a part from its on-hand quantity and minimum
@@ -61,4 +68,19 @@ export function paymentLabel(status) {
 /** Movement deltas: additions read green, removals red. */
 export function deltaTone(delta) {
   return Number(delta) > 0 ? 'success' : 'danger';
+}
+
+export function yardTone(status) {
+  switch (status) {
+    case YARD_STATUS.READY:
+      return 'success';
+    case YARD_STATUS.DISPATCHED:
+      return 'info';
+    default:
+      return 'neutral';
+  }
+}
+
+export function yardLabel(status) {
+  return YARD_STATUS_LABEL[status] ?? status ?? '—';
 }

@@ -41,6 +41,7 @@ const ROLE_TONE = {
   MANAGER: 'info',
   WAREHOUSE_STAFF: 'success',
   VIEWER: 'neutral',
+  SECURITY: 'warning',
 };
 
 /**

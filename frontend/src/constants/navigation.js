@@ -4,6 +4,7 @@ import {
   ArrowUpFromLine,
   ChartColumnIncreasing,
   FileSpreadsheet,
+  History,
   LayoutDashboard,
   Package,
   Plus,
@@ -12,7 +13,9 @@ import {
   ScanLine,
   ScrollText,
   Settings,
+  ShieldCheck,
   ShoppingCart,
+  Truck,
   Users,
 } from 'lucide-react';
 import { PERMISSIONS } from './permissions';
@@ -51,6 +54,16 @@ export const NAV_GROUPS = [
   {
     caption: 'Sales',
     items: [{ to: '/orders', label: 'Orders', icon: ReceiptText, permission: PERMISSIONS.VIEW_TRANSACTIONS }],
+  },
+  {
+    // A Security officer holds only these permissions, so this group is the
+    // whole of their sidebar; an administrator sees it alongside the rest.
+    caption: 'Security',
+    items: [
+      { to: '/security/dashboard', label: 'Gate dashboard', icon: ShieldCheck, permission: PERMISSIONS.VIEW_YARD_STOCK },
+      { to: '/security/yard-stock', label: 'Yard stock', icon: Truck, permission: PERMISSIONS.VIEW_YARD_STOCK },
+      { to: '/security/dispatch-history', label: 'Dispatch history', icon: History, permission: PERMISSIONS.VIEW_YARD_STOCK },
+    ],
   },
   {
     caption: 'QR & bulk',
@@ -95,7 +108,28 @@ export const ROUTE_TITLES = [
   { match: /^\/users/, crumb: 'Administration', title: 'Users' },
   { match: /^\/audit-logs/, crumb: 'Administration', title: 'Audit log' },
   { match: /^\/settings/, crumb: 'Settings', title: 'System settings' },
+  { match: /^\/security\/dashboard/, crumb: 'Security', title: 'Gate dashboard' },
+  { match: /^\/security\/yard-stock/, crumb: 'Security', title: 'Yard stock' },
+  { match: /^\/security\/dispatch-history/, crumb: 'Security', title: 'Dispatch history' },
+  { match: /^\/security\/orders\/\d+/, crumb: 'Security · Yard', title: 'Verify order' },
 ];
+
+/**
+ * Where a signed-in user belongs by default: the warehouse dashboard, or the
+ * gate dashboard for someone whose role only works the yard. Used after
+ * sign-in, for `/`, and by the access-denied page's way back.
+ */
+export function homePathFor(user) {
+  const permissions = user?.permissions ?? [];
+  if (permissions.includes(PERMISSIONS.VIEW_DASHBOARD)) return '/dashboard';
+  if (permissions.includes(PERMISSIONS.VIEW_YARD_STOCK)) return '/security/dashboard';
+  return '/dashboard';
+}
+
+/** The sign-in screen that matches a path: the gate has its own. */
+export function loginPathFor(pathname = '') {
+  return pathname.startsWith('/security') ? '/security/login' : '/login';
+}
 
 export function titleForPath(pathname) {
   return ROUTE_TITLES.find((entry) => entry.match.test(pathname)) || { crumb: '', title: '' };

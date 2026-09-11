@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\DispatchConflictException;
 use App\Exceptions\InsufficientStockException;
 use App\Models\Part;
 use App\Models\SalesOrder;
@@ -67,6 +68,7 @@ class OrderService
             $discount = max(0.0, min($discount, $subtotal));
             $total = round($subtotal - $discount, 2);
             $paidAmount = $this->resolvePaidAmount($paymentStatus, $total, $requestedPaidAmount);
+            $paymentStatus = $this->settledStatus($paymentStatus, $paidAmount, $total);
 
             $order = $this->createWithUniqueNumber([
                 'customer_name' => trim($customerName) !== '' ? $customerName : 'Walk-in customer',
@@ -118,22 +120,39 @@ class OrderService
         });
     }
 
+    /**
+     * Completing the final payment is what moves an order into yard stock —
+     * `paid_at` is stamped by the model the moment it becomes fully paid.
+     */
     public function updatePayment(SalesOrder $order, string $paymentStatus, ?float $requestedPaidAmount): SalesOrder
     {
-        if ($order->payment_status === SalesOrder::CANCELLED) {
-            throw new InvalidArgumentException('A cancelled order cannot have its payment changed.');
-        }
+        return DB::transaction(function () use ($order, $paymentStatus, $requestedPaidAmount) {
+            // Locked so a payment change and a gate dispatch of the same order
+            // cannot interleave — one waits for the other to commit.
+            $order = SalesOrder::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
-        $before = $order->getAttributes();
+            if ($order->payment_status === SalesOrder::CANCELLED) {
+                throw new InvalidArgumentException('A cancelled order cannot have its payment changed.');
+            }
 
-        $order->payment_status = $paymentStatus;
-        $order->paid_amount = $this->resolvePaidAmount($paymentStatus, (float) $order->total, $requestedPaidAmount ?? (float) $order->paid_amount);
-        $order->save();
+            if ($order->isDispatched()) {
+                throw new DispatchConflictException('This order has already been dispatched from the yard, so its payment can no longer be changed.');
+            }
 
-        $this->audit->log('order.payment', $order, $before, $order->getAttributes(),
-            "Order {$order->order_no} payment set to {$paymentStatus}");
+            $before = $order->getAttributes();
 
-        return $order->load('items', 'cashier:id,name');
+            $paidAmount = $this->resolvePaidAmount($paymentStatus, (float) $order->total, $requestedPaidAmount ?? (float) $order->paid_amount);
+            $paymentStatus = $this->settledStatus($paymentStatus, $paidAmount, (float) $order->total);
+
+            $order->payment_status = $paymentStatus;
+            $order->paid_amount = $paidAmount;
+            $order->save();
+
+            $this->audit->log('order.payment', $order, $before, $order->getAttributes(),
+                "Order {$order->order_no} payment set to {$paymentStatus}");
+
+            return $order->load('items', 'cashier:id,name');
+        });
     }
 
     /**
@@ -143,11 +162,21 @@ class OrderService
      */
     public function cancel(SalesOrder $order, ?string $reason): SalesOrder
     {
-        if ($order->payment_status === SalesOrder::CANCELLED) {
-            throw new InvalidArgumentException('This order is already cancelled.');
-        }
-
         return DB::transaction(function () use ($order, $reason) {
+            // Locked for the same reason as updatePayment(): a cancel racing a
+            // gate dispatch must see the dispatch, not return goods that left.
+            $order = SalesOrder::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($order->payment_status === SalesOrder::CANCELLED) {
+                throw new InvalidArgumentException('This order is already cancelled.');
+            }
+
+            // Its goods have physically left the yard; crediting them back to
+            // stock would put phantom units on the shelf.
+            if ($order->isDispatched()) {
+                throw new DispatchConflictException('This order has already been dispatched from the yard and cannot be cancelled.');
+            }
+
             $before = $order->getAttributes();
 
             foreach ($order->items()->whereNotNull('part_id')->get() as $item) {
@@ -198,6 +227,20 @@ class OrderService
             SalesOrder::PARTIALLY_PAID => round(max(0.0, min($requested, $total)), 2),
             default => throw new InvalidArgumentException("Unknown payment status [{$paymentStatus}]."),
         };
+    }
+
+    /**
+     * A "partial" payment that actually covers the whole total is a full
+     * payment. Promoting it here means the order reaches yard stock the moment
+     * the money is in, rather than waiting for someone to flip the status.
+     */
+    private function settledStatus(string $paymentStatus, float $paidAmount, float $total): string
+    {
+        if ($paymentStatus === SalesOrder::PARTIALLY_PAID && round($paidAmount, 2) >= round($total, 2)) {
+            return SalesOrder::PAID;
+        }
+
+        return $paymentStatus;
     }
 
     private function createWithUniqueNumber(array $attributes, int $attempts = 5): SalesOrder

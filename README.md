@@ -45,11 +45,11 @@ cookie, never a bearer token in JavaScript. Frontend and API must share a regist
 domain for the cookie to be accepted (`localhost` in development — see [Environment
 variables](#5-environment-variables)).
 
-**Authorization** is enforced once, server-side, for every one of the 68 API routes, via a
+**Authorization** is enforced once, server-side, for every one of the 74 API routes, via a
 single `permission:<slug>` route middleware (`backend/app/Http/Middleware/EnsurePermission.php`)
 backed by `User::hasPermission()`. This is a deliberate alternative to per-model Laravel
 Policy classes: one central enforcement point that every route passes through, rather than
-68 individual authorization checks that could individually be forgotten. The frontend also
+74 individual authorization checks that could individually be forgotten. The frontend also
 hides controls a user cannot use, but that is presentation only — the server checks again on
 every request regardless of what the browser sent.
 
@@ -90,9 +90,9 @@ backend/
   app/Services/                  StockService, QrService, OrderService, ImportService,
                                   ReportService, AuditLogger — business logic lives here
   app/Models/
-  database/migrations/           14 migrations, chronological, no gaps
+  database/migrations/           16 migrations, chronological, no gaps
   database/seeders/               role/permission matrix, dev users, catalog, parts
-  routes/api.php                  all 68 routes, versioned under /api/v1
+  routes/api.php                  all 74 routes, versioned under /api/v1
   tests/Feature/
 
 frontend/
@@ -211,9 +211,34 @@ not use these in production; deactivate or replace them before go-live.**
 | Ruwan Perera | `ruwan@hanwellaspares.lk` | Manager — operations + reporting/exports |
 | Kasun Adikari | `kasun@hanwellaspares.lk` | Warehouse staff — scanning, stock movements, counter sales |
 | Nimali Silva | `nimali@hanwellaspares.lk` | Viewer — read-only |
+| Yard Security | `security@hanwellaspares.lk` | Security officer — yard gate only; sign in at `/security/login` |
 
-Password for all four: the value of `DEV_SEED_PASSWORD` in `backend/.env`, or `password` if
+Password for all five: the value of `DEV_SEED_PASSWORD` in `backend/.env`, or `password` if
 that variable is left unset.
+
+### Security: yard stock and dispatch
+
+Sales order → full payment → yard stock → Security verification → dispatch.
+
+An order enters **yard stock** the moment it is fully paid. The server decides that from the
+money on every request: `PAID`, `paid_amount >= total`, not cancelled. It leaves the yard when
+a Security officer dispatches it at the gate. Partially paid, unpaid and cancelled orders
+never appear there, and a dispatch request cannot override that. The client sends nothing but
+an optional note, and the server re-checks every rule under a row lock.
+
+- **Screens:** `/security/login`, `/security/dashboard`, `/security/yard-stock`,
+  `/security/dispatch-history`, and `/security/orders/:id` to verify and dispatch.
+- **Role:** `SECURITY` holds only `view_yard_stock` and `dispatch_orders`. It has no
+  dashboard, inventory, sales, payment or admin access. `ADMIN` gets both permissions too.
+  Create gate accounts in **Users** with the *Security officer* role.
+- **Lookup:** type the order number from the bill or scan its QR code. The printed bill's QR
+  encodes the order number. A handheld scanner works as a keyboard; the camera needs HTTPS or
+  localhost.
+- **Records:** each dispatch is a permanent `dispatches` row, one per order, enforced by a
+  `UNIQUE` index. It is also logged as `order.dispatch` in the audit trail. A dispatched order
+  can no longer be cancelled or have its payment changed.
+
+API details: [`docs/api/README.md`](docs/api/README.md#security--yard-stock--dispatch).
 
 ## 10. QR workflow
 

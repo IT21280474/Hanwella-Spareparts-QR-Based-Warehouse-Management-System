@@ -42,6 +42,10 @@ class Permission extends Model
             'view_reports' => 'View reports',
             'export_reports' => 'Export reports',
         ],
+        'Security' => [
+            'view_yard_stock' => 'View yard stock and dispatch history',
+            'dispatch_orders' => 'Dispatch fully paid orders from the yard',
+        ],
         'Administration' => [
             'manage_users' => 'Manage users and audit logs',
             'manage_settings' => 'Manage settings and reference data',

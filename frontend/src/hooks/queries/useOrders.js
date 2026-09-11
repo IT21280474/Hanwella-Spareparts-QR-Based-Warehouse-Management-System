@@ -21,7 +21,8 @@ export function useOrderQuery(id, options = {}) {
 
 /**
  * An order moves stock, so anything that changes one also invalidates the
- * inventory, the movement ledger and the dashboard — never just the order.
+ * inventory, the movement ledger, the dashboard and the yard — never just the
+ * order.
  */
 export function useInvalidateOrders() {
   const queryClient = useQueryClient();
@@ -31,6 +32,8 @@ export function useInvalidateOrders() {
     queryClient.invalidateQueries({ queryKey: queryKeys.parts.all() });
     queryClient.invalidateQueries({ queryKey: queryKeys.movements.all() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+    // A payment completed here can move an order into yard stock.
+    queryClient.invalidateQueries({ queryKey: queryKeys.security.all() });
     if (id) queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(id) });
   };
 }

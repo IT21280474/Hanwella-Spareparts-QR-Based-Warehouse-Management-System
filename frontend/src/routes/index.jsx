@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout, AuthLayout } from '@/layouts';
 import { PERMISSIONS } from '@/constants/permissions';
-import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
+import { GuestRoute, HomeRedirect, ProtectedRoute } from './ProtectedRoute';
 
 /**
  * Route table.
@@ -36,6 +36,12 @@ const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const AuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage'));
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
+const SecurityLoginPage = lazy(() => import('@/pages/security/SecurityLoginPage'));
+const SecurityDashboardPage = lazy(() => import('@/pages/security/SecurityDashboardPage'));
+const YardStockPage = lazy(() => import('@/pages/security/YardStockPage'));
+const DispatchHistoryPage = lazy(() => import('@/pages/security/DispatchHistoryPage'));
+const OrderVerificationPage = lazy(() => import('@/pages/security/OrderVerificationPage'));
+
 const ForbiddenPage = lazy(() => import('@/pages/errors/ForbiddenPage'));
 const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
 
@@ -48,11 +54,14 @@ export function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
+        <Route element={<AuthLayout variant="security" />}>
+          <Route path="/security/login" element={<SecurityLoginPage />} />
+        </Route>
       </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<HomeRedirect />} />
 
           <Route element={<ProtectedRoute permission={PERMISSIONS.VIEW_DASHBOARD} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -112,6 +121,15 @@ export function AppRoutes() {
 
           <Route element={<ProtectedRoute permission={PERMISSIONS.MANAGE_SETTINGS} />}>
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* The yard gate. The API re-checks view_yard_stock / dispatch_orders on every call. */}
+          <Route element={<ProtectedRoute permission={PERMISSIONS.VIEW_YARD_STOCK} />}>
+            <Route path="/security" element={<Navigate to="/security/dashboard" replace />} />
+            <Route path="/security/dashboard" element={<SecurityDashboardPage />} />
+            <Route path="/security/yard-stock" element={<YardStockPage />} />
+            <Route path="/security/dispatch-history" element={<DispatchHistoryPage />} />
+            <Route path="/security/orders/:id" element={<OrderVerificationPage />} />
           </Route>
 
           <Route path="/403" element={<ForbiddenPage />} />

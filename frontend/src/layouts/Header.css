@@ -57,6 +57,11 @@
   flex: none;
 }
 
+/* Holds the user block to the right when the search box is not shown. */
+.header__spacer {
+  flex: 1;
+}
+
 .header__bell {
   position: relative;
   display: grid;

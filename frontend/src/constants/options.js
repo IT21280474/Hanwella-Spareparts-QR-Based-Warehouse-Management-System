@@ -34,6 +34,27 @@ export const PAYMENT_STATUS_LABEL = {
   [PAYMENT_STATUS.CANCELLED]: 'Cancelled',
 };
 
+/**
+ * Where an order stands at the yard gate. Computed by the server from the
+ * payment data — the client only ever displays it.
+ */
+export const YARD_STATUS = {
+  READY: 'READY_FOR_DISPATCH',
+  DISPATCHED: 'DISPATCHED',
+  NOT_ELIGIBLE: 'NOT_ELIGIBLE',
+};
+
+export const YARD_STATUS_LABEL = {
+  [YARD_STATUS.READY]: 'Ready for dispatch',
+  [YARD_STATUS.DISPATCHED]: 'Dispatched',
+  [YARD_STATUS.NOT_ELIGIBLE]: 'Not in yard',
+};
+
+export const DISPATCH_STATUS_LABEL = {
+  AWAITING_DISPATCH: 'Awaiting dispatch',
+  DISPATCHED: 'Dispatched',
+};
+
 /** Payment states a cashier may select while finalising a sale. */
 export const CHECKOUT_PAYMENT_STATUSES = [
   PAYMENT_STATUS.PAID,

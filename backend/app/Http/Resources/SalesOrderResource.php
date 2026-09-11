@@ -31,6 +31,13 @@ class SalesOrderResource extends JsonResource
                 'name' => $this->cashier->name,
             ]),
             'ordered_at' => $this->ordered_at?->toIso8601String(),
+            'paid_at' => $this->paid_at?->toIso8601String(),
+            'yard_status' => $this->yardStatus(),
+            'dispatched_at' => $this->dispatched_at?->toIso8601String(),
+            'dispatched_by' => $this->whenLoaded('dispatchedBy', fn () => $this->dispatchedBy === null ? null : [
+                'id' => $this->dispatchedBy->id,
+                'name' => $this->dispatchedBy->name,
+            ]),
             'items' => SalesOrderItemResource::collection($this->whenLoaded('items')),
         ];
     }

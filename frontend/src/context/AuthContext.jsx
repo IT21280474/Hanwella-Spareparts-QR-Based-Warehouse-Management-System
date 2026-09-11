@@ -4,6 +4,7 @@ import { authApi } from '@/services/api';
 import { SESSION_EXPIRED_EVENT } from '@/services/apiClient';
 import { toApiError } from '@/utils/errors';
 import { toast } from '@/store/toastStore';
+import { homePathFor } from '@/constants/navigation';
 
 export const AuthContext = createContext(null);
 
@@ -80,6 +81,8 @@ export function AuthProvider({ children }) {
       can: (permission) => (permission ? permissions.has(permission) : true),
       canAny: (list = []) => list.length === 0 || list.some((p) => permissions.has(p)),
       hasRole: (slug) => user?.role?.slug === slug,
+      /** Default landing screen for this user's role. */
+      homePath: homePathFor(user),
       login,
       logout,
       refresh: resolveSession,

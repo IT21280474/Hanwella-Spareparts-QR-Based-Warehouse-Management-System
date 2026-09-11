@@ -2,7 +2,7 @@
 
 Base URL: `{VITE_API_URL}/api/v1` (e.g. `http://localhost:8000/api/v1` in development).
 
-Source of truth: `backend/routes/api.php` (68 routes). This document groups them by
+Source of truth: `backend/routes/api.php` (74 routes). This document groups them by
 resource; every method/URL/permission pair below is read directly from that file.
 
 ## Conventions
@@ -69,7 +69,7 @@ applied server-side — the frontend never fetches a full table to filter it in 
 
 | Method | URL | Auth | Body |
 |---|---|---|---|
-| POST | `/auth/login` | *public*, `guest`, throttled 6/min | `email`, `password`, `remember?` |
+| POST | `/auth/login` | *public*, `guest`, throttled 6/min | `email`, `password`, `remember?`, `portal?` (`security`) |
 | POST | `/auth/forgot-password` | *public*, `guest`, throttled 3/min | `email` |
 | POST | `/auth/reset-password` | *public*, `guest`, throttled 3/min | `token`, `email`, `password` (confirmed, min 8) |
 | POST | `/auth/logout` | session | — |
@@ -82,6 +82,9 @@ applied server-side — the frontend never fetches a full table to filter it in 
   last_login_at, created_at, role: {slug, name}, permissions: [slug, ...]`. The password
   hash is never present in any response.
 - `forgot-password` always returns the same message whether or not the email is registered.
+- `portal: "security"` is sent by the Security sign-in screen. It is the same login and the
+  same session cookie, but an account without `view_yard_stock` is signed straight back out
+  with a `422` on `email`: "This account does not have Security access…".
 
 ## Dashboard
 
@@ -215,11 +218,52 @@ one transaction; insufficient stock on any line rolls back the whole order (`409
 Cancelling an order returns every line's quantity to stock via a compensating movement — it
 never deletes or edits the original sale rows.
 
+Once Security has dispatched an order its goods have left the building, so `payment` and
+`cancel` on a dispatched order are refused with `409`. A `PARTIALLY_PAID` update whose
+`paid_amount` covers the whole total is stored as `PAID`. `SalesOrderResource` also carries
+`paid_at` (when it became fully paid), `yard_status`, `dispatched_at` and `dispatched_by`.
+
 `SalesOrderResource`: `id, order_no, customer_name, customer_phone, subtotal, discount,
 total, paid_amount, outstanding, payment_status, payment_mode, status, items_count, cashier:
 {id,name}, ordered_at, items: [SalesOrderItemResource]`. Line items are point-in-time
 **snapshots** (`part_name`, `part_number`, `qr_code`, `unit_price` copied at sale time) — a
 printed bill reads identically even if the part is later renamed, repriced, or deleted.
+
+## Security — yard stock & dispatch
+
+| Method | URL | Permission | Notes |
+|---|---|---|---|
+| GET | `/security/dashboard` | `view_yard_stock` | KPIs + the 5 most recent dispatches |
+| GET | `/security/yard-stock` | `view_yard_stock` | `?search=&from=&to=` (paid date), paginated, oldest paid first |
+| GET | `/security/orders/search` | `view_yard_stock` | `?order_no=` exact match, case/whitespace-insensitive |
+| GET | `/security/orders/{order}` | `view_yard_stock` | yard or dispatched orders only, else `404` |
+| POST | `/security/orders/{order}/dispatch` | `dispatch_orders`, throttled 30/min | body: `notes?` (max 255) — nothing else is read |
+| GET | `/security/dispatch-history` | `view_yard_stock` | `?search=&from=&to=` (dispatch date), newest first |
+
+**Yard eligibility** is computed on the server on every request — never stored, never taken
+from the client: `payment_status = PAID` **and** `paid_amount >= total` (DECIMAL, exact),
+`status = COMPLETED` (not cancelled), and `dispatched_at IS NULL`. The rule lives once in
+`SalesOrder::dispatchBlocker()` with its SQL twin `SalesOrder::scopeReadyForDispatch()`.
+
+`search` answers `404` for an unknown number, `409` with the reason for an unpaid or
+cancelled order (and no order data), and `200` for an eligible order. It also answers `200`
+for an already-dispatched one, with `meta: {eligible: false, reason}` so the gate can see who
+released it and when.
+
+`dispatch` re-checks every rule under `SELECT … FOR UPDATE`, claims the order with a
+conditional `UPDATE … WHERE dispatched_at IS NULL`, and writes a `dispatches` row that is
+`UNIQUE` per order. Refusals are `409`: *"This order cannot be dispatched because full
+payment has not been completed."*, *"Cancelled orders cannot be dispatched."*, *"This order
+has already been dispatched."* Every dispatch writes an `order.dispatch` audit entry.
+Dispatch records have no update or delete route.
+
+`YardOrderResource`: `id, order_no, bill_no, customer_name, customer_phone, ordered_at,
+paid_at, items_count, total_quantity, total, paid_amount, balance, payment_status,
+is_fully_paid, yard_status, dispatch_status, items: [{part_name, part_number, qr_code,
+quantity, unit}], dispatch?`. It carries no unit prices, discount, payment mode or cashier.
+`DispatchResource`: `id, dispatch_no (DSP-000042), order_id, order_no, customer_*,
+items_count, total_quantity, total, paid_amount, payment_status_at_dispatch, status,
+dispatched_by: {id, name}, dispatched_at, notes`.
 
 ## Reference data — Categories, Suppliers, Warehouses, Locations
 

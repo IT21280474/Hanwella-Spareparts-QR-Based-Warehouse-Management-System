@@ -12,3 +12,4 @@ export { auditLogsApi } from './auditLogs';
 export { importsApi } from './imports';
 export { reportsApi, REPORT_TYPES } from './reports';
 export { settingsApi } from './settings';
+export { securityApi } from './security';

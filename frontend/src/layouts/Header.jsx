@@ -44,6 +44,11 @@ export function Header({ crumb: crumbOverride, title: titleOverride }) {
   const alerts = summary?.alerts ?? [];
   const alertCount = alerts.length;
 
+  // Both read warehouse data a gate-only account cannot see; rendering them
+  // for a Security officer would only produce 403s.
+  const showSearch = can(PERMISSIONS.VIEW_INVENTORY);
+  const showAlerts = can(PERMISSIONS.VIEW_DASHBOARD);
+
   return (
     <header className="header" data-noprint>
       <button type="button" className="header__toggle header__toggle--desktop" onClick={toggleSidebar} aria-label="Toggle navigation">
@@ -59,60 +64,62 @@ export function Header({ crumb: crumbOverride, title: titleOverride }) {
         <p className="header__title">{title}</p>
       </div>
 
-      <GlobalSearch />
+      {showSearch ? <GlobalSearch /> : <div className="header__spacer" aria-hidden="true" />}
 
-      <div className="header__alerts" ref={panelRef}>
-        <button
-          type="button"
-          className="header__bell"
-          onClick={toggleNotifications}
-          aria-label={`Warehouse alerts${alertCount ? ` (${alertCount})` : ''}`}
-          aria-expanded={notificationsOpen}
-        >
-          <Bell size={17} strokeWidth={1.7} aria-hidden="true" />
-          {alertCount > 0 ? <span className="header__bell-count">{alertCount}</span> : null}
-        </button>
+      {showAlerts ? (
+        <div className="header__alerts" ref={panelRef}>
+          <button
+            type="button"
+            className="header__bell"
+            onClick={toggleNotifications}
+            aria-label={`Warehouse alerts${alertCount ? ` (${alertCount})` : ''}`}
+            aria-expanded={notificationsOpen}
+          >
+            <Bell size={17} strokeWidth={1.7} aria-hidden="true" />
+            {alertCount > 0 ? <span className="header__bell-count">{alertCount}</span> : null}
+          </button>
 
-        {notificationsOpen ? (
-          <div className="header__panel">
-            <div className="header__panel-head">
-              <span className="header__panel-title">Warehouse alerts</span>
-              <button type="button" className="header__panel-close" onClick={closeNotifications} aria-label="Close alerts">
-                <X size={15} strokeWidth={1.8} aria-hidden="true" />
-              </button>
+          {notificationsOpen ? (
+            <div className="header__panel">
+              <div className="header__panel-head">
+                <span className="header__panel-title">Warehouse alerts</span>
+                <button type="button" className="header__panel-close" onClick={closeNotifications} aria-label="Close alerts">
+                  <X size={15} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              </div>
+
+              {alerts.length === 0 ? (
+                <p className="header__panel-empty">Nothing needs attention right now.</p>
+              ) : (
+                alerts.map((alert, index) =>
+                  alert.link ? (
+                    <Link
+                      key={`${alert.text}-${index}`}
+                      to={alert.link}
+                      className="header__alert"
+                      onClick={closeNotifications}
+                    >
+                      <span className={`header__alert-dot header__alert-dot--${alert.level}`} aria-hidden="true" />
+                      <span className="header__alert-body">
+                        <span className="header__alert-text">{alert.text}</span>
+                        <span className="header__alert-meta">{alert.meta}</span>
+                      </span>
+                    </Link>
+                  ) : (
+                    <div key={`${alert.text}-${index}`} className="header__alert">
+                      <span className={`header__alert-dot header__alert-dot--${alert.level}`} aria-hidden="true" />
+                      <span className="header__alert-body">
+                        <span className="header__alert-text">{alert.text}</span>
+                        <span className="header__alert-meta">{alert.meta}</span>
+                      </span>
+                    </div>
+                  ),
+                )
+              )}
             </div>
-
-            {alerts.length === 0 ? (
-              <p className="header__panel-empty">Nothing needs attention right now.</p>
-            ) : (
-              alerts.map((alert, index) =>
-                alert.link ? (
-                  <Link
-                    key={`${alert.text}-${index}`}
-                    to={alert.link}
-                    className="header__alert"
-                    onClick={closeNotifications}
-                  >
-                    <span className={`header__alert-dot header__alert-dot--${alert.level}`} aria-hidden="true" />
-                    <span className="header__alert-body">
-                      <span className="header__alert-text">{alert.text}</span>
-                      <span className="header__alert-meta">{alert.meta}</span>
-                    </span>
-                  </Link>
-                ) : (
-                  <div key={`${alert.text}-${index}`} className="header__alert">
-                    <span className={`header__alert-dot header__alert-dot--${alert.level}`} aria-hidden="true" />
-                    <span className="header__alert-body">
-                      <span className="header__alert-text">{alert.text}</span>
-                      <span className="header__alert-meta">{alert.meta}</span>
-                    </span>
-                  </div>
-                ),
-              )
-            )}
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="header__user">
         <span className="header__avatar" aria-hidden="true">

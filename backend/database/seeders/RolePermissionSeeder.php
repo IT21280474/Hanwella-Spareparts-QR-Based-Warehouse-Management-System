@@ -35,6 +35,13 @@ class RolePermissionSeeder extends Seeder
             'view_transactions',
             'view_reports',
         ],
+        // The yard gate and nothing else: no dashboard, no inventory, no
+        // sales, and no way to touch a payment. Everything outside these two
+        // permissions is refused by the `permission:` middleware.
+        Role::SECURITY => [
+            'view_yard_stock',
+            'dispatch_orders',
+        ],
     ];
 
     private const ROLE_META = [
@@ -42,6 +49,7 @@ class RolePermissionSeeder extends Seeder
         Role::MANAGER => ['Warehouse manager', 'Day-to-day operations plus reporting and exports.'],
         Role::WAREHOUSE_STAFF => ['Warehouse staff', 'Scanning, stock movements and counter sales.'],
         Role::VIEWER => ['Viewer', 'Read-only access to inventory, movements and reports.'],
+        Role::SECURITY => ['Security officer', 'Yard gate only: verifies fully paid orders and records their dispatch.'],
     ];
 
     public function run(): void

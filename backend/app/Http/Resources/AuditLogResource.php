@@ -25,6 +25,7 @@ class AuditLogResource extends JsonResource
         'adjust' => 'stock',
         'in' => 'stock',
         'out' => 'stock',
+        'dispatch' => 'stock',
     ];
 
     public function toArray(Request $request): array

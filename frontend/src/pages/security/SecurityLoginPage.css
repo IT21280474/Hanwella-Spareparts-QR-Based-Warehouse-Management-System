@@ -1,0 +1,10 @@
+.security-login__mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-ink);
+  color: var(--color-brand);
+}

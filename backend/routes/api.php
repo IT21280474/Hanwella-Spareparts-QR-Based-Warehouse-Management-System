@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DispatchController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VehicleReferenceController;
 use App\Http\Controllers\Api\V1\WarehouseController;
+use App\Http\Controllers\Api\V1\YardController;
 use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +103,22 @@ Route::prefix('v1')->group(function () {
         Route::post('orders', [OrderController::class, 'store'])->middleware('permission:create_stock_out');
         Route::patch('orders/{order}/payment', [OrderController::class, 'updatePayment'])->middleware('permission:create_stock_out');
         Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('permission:create_stock_out');
+
+        // ---- Security: yard stock & dispatch ----
+        // Yard stock is derived server-side from payment data on every call;
+        // nothing here accepts a payment status from the client.
+        Route::prefix('security')->group(function () {
+            Route::middleware('permission:view_yard_stock')->group(function () {
+                Route::get('dashboard', [YardController::class, 'dashboard']);
+                Route::get('yard-stock', [YardController::class, 'index']);
+                Route::get('orders/search', [YardController::class, 'search']);
+                Route::get('orders/{order}', [YardController::class, 'show'])->whereNumber('order');
+                Route::get('dispatch-history', [DispatchController::class, 'index']);
+            });
+            Route::post('orders/{order}/dispatch', [DispatchController::class, 'store'])
+                ->whereNumber('order')
+                ->middleware(['permission:dispatch_orders', 'throttle:30,1']);
+        });
 
         // ---- Reference data ----
         Route::middleware('permission:view_inventory')->group(function () {

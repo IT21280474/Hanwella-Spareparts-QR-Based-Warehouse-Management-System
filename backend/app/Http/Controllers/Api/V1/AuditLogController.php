@@ -22,7 +22,7 @@ class AuditLogController extends Controller
         'created' => ['create', 'generate'],
         'updated' => ['update', 'payment', 'activate'],
         'deleted' => ['delete', 'deactivate', 'cancel'],
-        'stock' => ['in', 'out', 'adjust', 'transfer'],
+        'stock' => ['in', 'out', 'adjust', 'transfer', 'dispatch'],
         'auth' => ['login', 'logout'],
     ];
 

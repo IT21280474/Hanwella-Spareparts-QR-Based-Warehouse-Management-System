@@ -56,4 +56,12 @@ export const queryKeys = {
   reports: (type, params) => ['reports', type, params],
 
   settings: () => ['settings'],
+
+  security: {
+    all: () => ['security'],
+    dashboard: () => ['security', 'dashboard'],
+    yard: (params) => ['security', 'yard', params],
+    order: (id) => ['security', 'order', String(id)],
+    history: (params) => ['security', 'history', params],
+  },
 };

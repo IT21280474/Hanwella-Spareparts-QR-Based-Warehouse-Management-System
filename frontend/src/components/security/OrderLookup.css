@@ -1,0 +1,175 @@
+.lookup__label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.lookup__row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.lookup__field {
+  position: relative;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.lookup__glyph {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  color: var(--color-muted-2);
+  pointer-events: none;
+}
+
+.lookup__input {
+  width: 100%;
+  height: 64px;
+  padding: 0 16px 0 52px;
+  border: 1.5px solid var(--color-line-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-control);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.lookup__input::placeholder {
+  font-weight: 500;
+  color: var(--color-muted-2);
+  opacity: 0.7;
+}
+
+.lookup__input:hover {
+  border-color: var(--color-line-3);
+}
+
+.lookup__input:focus {
+  outline: none;
+  border-color: var(--color-link);
+  box-shadow: 0 0 0 3px rgba(166, 230, 53, 0.35);
+}
+
+.lookup__input[aria-invalid='true'] {
+  border-color: var(--color-danger-line);
+}
+
+.lookup__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.lookup__actions .btn {
+  height: 64px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+
+.lookup__submit {
+  min-width: 128px;
+}
+
+.lookup__hint {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.lookup__outcome {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  border-radius: var(--radius-lg);
+  animation: sc-pop 0.18s ease-out;
+}
+
+.lookup__outcome--warning {
+  border-color: var(--color-warning-line);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.lookup__outcome--danger {
+  border-color: var(--color-danger-line);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.lookup__outcome--info {
+  border-color: var(--color-info-line);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.lookup__outcome-icon {
+  flex: none;
+  margin-top: 2px;
+}
+
+.lookup__outcome-title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.lookup__outcome-body {
+  margin-top: 2px;
+  font-size: var(--text-md);
+  line-height: 1.55;
+  color: var(--color-ink-2);
+}
+
+.lookup__outcome-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+/* Compact variant for the yard-stock toolbar. */
+.lookup--md .lookup__input {
+  height: 48px;
+  font-size: 18px;
+  padding-left: 44px;
+}
+
+.lookup--md .lookup__glyph {
+  left: 14px;
+}
+
+.lookup--md .lookup__actions .btn {
+  height: 48px;
+  font-size: var(--text-md);
+}
+
+@media (max-width: 640px) {
+  .lookup__input {
+    height: 56px;
+    font-size: 20px;
+  }
+
+  .lookup__actions {
+    width: 100%;
+  }
+
+  .lookup__actions .btn {
+    flex: 1;
+    height: 52px;
+  }
+}
