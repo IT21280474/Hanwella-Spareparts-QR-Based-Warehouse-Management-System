@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, Check, Clock, Package, Printer, ReceiptText } from 'lucide-react';
-import { useCancelOrder, useOrderQuery, useUpdateOrderPayment } from '@/hooks/queries/useOrders';
+import { ArrowLeft, Ban, Check, Clock, Package, Printer, ReceiptText, ShieldCheck, Truck } from 'lucide-react';
+import { useCancelOrder, useDispatchOrder, useOrderQuery, useUpdateOrderPayment } from '@/hooks/queries/useOrders';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { usePermission } from '@/hooks/usePermission';
 import { toast } from '@/store/toastStore';
@@ -38,15 +38,11 @@ function timelineFor(order) {
   const cancelled = order.payment_status === PAYMENT_STATUS.CANCELLED;
   const settled = order.payment_status === PAYMENT_STATUS.PAID;
   const partial = order.payment_status === PAYMENT_STATUS.PARTIALLY_PAID;
+  const stockOut = Boolean(order.stock_deducted_at);
+  const dispatched = Boolean(order.dispatched_at);
 
   return [
     { label: 'Order placed', detail: formatDateTime(order.ordered_at), state: 'done', icon: ReceiptText },
-    {
-      label: 'Stock deducted',
-      detail: `${pluralize(order.items?.length ?? 0, 'line item')} moved out`,
-      state: cancelled ? 'undone' : 'done',
-      icon: Package,
-    },
     {
       label: cancelled ? 'Payment voided' : settled ? 'Payment received' : partial ? 'Part payment received' : 'Payment pending',
       detail: cancelled
@@ -58,10 +54,34 @@ function timelineFor(order) {
       icon: settled ? Check : Clock,
     },
     {
-      label: cancelled ? 'Order cancelled' : 'Bill issued',
-      detail: cancelled ? 'Units returned to stock' : 'Ready to print',
-      state: cancelled ? 'undone' : settled ? 'done' : 'todo',
-      icon: cancelled ? Ban : Printer,
+      // Stock only leaves once the order is fully paid — a pending order's
+      // units are still sitting on the shelf, not reserved or moved.
+      label: stockOut ? 'Stock deducted' : 'Stock not yet deducted',
+      detail: stockOut
+        ? `${pluralize(order.items?.length ?? 0, 'line item')} moved out`
+        : 'Waiting on full payment',
+      state: cancelled && !stockOut ? 'todo' : stockOut ? 'done' : 'todo',
+      icon: Package,
+    },
+    {
+      label: dispatched ? 'Dispatched' : cancelled ? 'Order cancelled' : 'Awaiting dispatch',
+      detail: dispatched
+        ? `Verified by ${order.dispatched_by?.name || 'security'} · ${formatDateTime(order.dispatched_at)}`
+        : cancelled
+          ? stockOut
+            ? 'Units returned to stock'
+            : 'No stock was ever taken'
+          : settled
+            ? 'Ready for security to verify and release'
+            : 'Needs full payment first',
+      state: dispatched ? 'done' : cancelled ? 'undone' : 'todo',
+      icon: cancelled ? Ban : dispatched ? ShieldCheck : Truck,
+    },
+    {
+      label: 'Bill issued',
+      detail: cancelled ? 'Order cancelled' : 'Ready to print',
+      state: cancelled ? 'undone' : 'done',
+      icon: Printer,
     },
   ];
 }
@@ -84,6 +104,7 @@ export default function OrderDetailPage() {
   const { data: order, isLoading, isError, error, refetch } = useOrderQuery(id);
   const updatePayment = useUpdateOrderPayment(id);
   const cancelOrder = useCancelOrder(id);
+  const dispatchOrder = useDispatchOrder(id);
 
   useDocumentTitle(order ? `Order ${order.order_no}` : 'Order');
 
@@ -96,6 +117,7 @@ export default function OrderDetailPage() {
   }
 
   const cancelled = order?.payment_status === PAYMENT_STATUS.CANCELLED;
+  const dispatched = Boolean(order?.dispatched_at);
 
   const setPaymentStatus = (status) => {
     updatePayment.mutate(
@@ -108,6 +130,13 @@ export default function OrderDetailPage() {
         onError: (updateError) => toast.fromError(updateError, 'Could not update the payment'),
       },
     );
+  };
+
+  const onDispatch = () => {
+    dispatchOrder.mutate(undefined, {
+      onSuccess: ({ message }) => toast.success('Order dispatched', message || 'Goods released.'),
+      onError: (dispatchError) => toast.fromError(dispatchError, 'Could not dispatch this order'),
+    });
   };
 
   const onCancel = () => {
@@ -151,6 +180,15 @@ export default function OrderDetailPage() {
                   <Badge tone={paymentTone(order.payment_status)} dot>
                     {paymentLabel(order.payment_status)}
                   </Badge>
+                  {dispatched ? (
+                    <Badge tone="info" dot>
+                      Dispatched
+                    </Badge>
+                  ) : order.ready_for_dispatch ? (
+                    <Badge tone="warning" dot>
+                      Ready for dispatch
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="order__meta">
                   {formatDateTime(order.ordered_at)} · {order.customer_name || 'Walk-in customer'}
@@ -169,7 +207,13 @@ export default function OrderDetailPage() {
                 </Button>
               </Link>
 
-              {can(PERMISSIONS.CREATE_STOCK_OUT) && !cancelled ? (
+              {can(PERMISSIONS.DISPATCH_ORDERS) && order.ready_for_dispatch ? (
+                <Button icon={Truck} loading={dispatchOrder.isPending} onClick={onDispatch}>
+                  Dispatch
+                </Button>
+              ) : null}
+
+              {can(PERMISSIONS.CREATE_STOCK_OUT) && !cancelled && !dispatched ? (
                 <>
                   {order.payment_status !== PAYMENT_STATUS.PAID ? (
                     <Button

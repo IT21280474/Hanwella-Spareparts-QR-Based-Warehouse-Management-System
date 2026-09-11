@@ -12,6 +12,7 @@ import {
   ScanLine,
   ScrollText,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   Users,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ export const NAV_GROUPS = [
     caption: 'Overview',
     items: [
       { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: PERMISSIONS.VIEW_DASHBOARD },
+      { to: '/security', label: 'Dispatch gate', icon: ShieldCheck, permission: PERMISSIONS.DISPATCH_ORDERS },
       {
         to: '/sales/new',
         label: 'New sale',
@@ -76,6 +78,7 @@ export const NAV_GROUPS = [
  */
 export const ROUTE_TITLES = [
   { match: /^\/dashboard/, crumb: 'Overview', title: 'Warehouse dashboard' },
+  { match: /^\/security/, crumb: 'Overview', title: 'Dispatch gate' },
   { match: /^\/inventory\/new/, crumb: 'Inventory', title: 'Add spare part' },
   { match: /^\/inventory\/\d+\/edit/, crumb: 'Inventory', title: 'Edit spare part' },
   { match: /^\/inventory\/\d+/, crumb: 'Inventory · Spare part', title: 'Spare part' },

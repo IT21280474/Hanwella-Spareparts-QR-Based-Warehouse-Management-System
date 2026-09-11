@@ -175,9 +175,10 @@ export default function InventoryListPage() {
           <ErrorState error={error} onRetry={refetch} />
         ) : (
           <>
-            <TableWrap minWidth={960}>
+            <TableWrap minWidth={1010}>
               <thead>
                 <tr>
+                  <Th width={52}>Photo</Th>
                   <Th width={52}>QR</Th>
                   <SortableTh column="name" sort={sort} direction={direction} onSort={toggleSort}>
                     Spare part
@@ -200,11 +201,21 @@ export default function InventoryListPage() {
               </thead>
 
               {isLoading ? (
-                <SkeletonRows rows={8} columns={8} />
+                <SkeletonRows rows={8} columns={9} />
               ) : (
                 <tbody className={isFetching ? 'is-refreshing' : ''}>
                   {rows.map((part) => (
                     <Tr key={part.id}>
+                      <Td>
+                        {part.image_url ? (
+                          <img src={part.image_url} alt="" className="inventory__thumb" />
+                        ) : (
+                          <span className="inventory__thumb inventory__thumb--empty" aria-hidden="true">
+                            <Package size={14} strokeWidth={1.8} />
+                          </span>
+                        )}
+                      </Td>
+
                       <Td>
                         <QrImage code={part.qr_code} size={30} />
                       </Td>

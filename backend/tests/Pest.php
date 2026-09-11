@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Category;
+use App\Models\Location;
 use App\Models\Part;
 use App\Models\Role;
 use App\Models\User;
@@ -54,6 +55,21 @@ function makeCategory(array $attributes = []): Category
     return Category::create(array_merge([
         'name' => 'Brake System '.$sequence,
         'code' => strtoupper(base_convert((string) $sequence, 10, 36)),
+        'is_active' => true,
+    ], $attributes));
+}
+
+/** A leaf bin, to test that stock movements find a part's real location. */
+function makeLocation(Warehouse $warehouse, array $attributes = []): Location
+{
+    $suffix = strtoupper(substr(uniqid(), -6));
+
+    return Location::create(array_merge([
+        'warehouse_id' => $warehouse->id,
+        'type' => Location::BIN,
+        'name' => 'Bin '.$suffix,
+        'code' => 'B-'.$suffix,
+        'full_path' => 'Bin '.$suffix,
         'is_active' => true,
     ], $attributes));
 }

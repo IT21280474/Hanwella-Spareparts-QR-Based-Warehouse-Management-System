@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Button, Field, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { homeRouteFor } from '@/constants/permissions';
 import { toApiError } from '@/utils/errors';
 import './Auth.css';
 
@@ -41,8 +42,10 @@ export default function LoginPage() {
   const onSubmit = async (values) => {
     setFormError('');
     try {
-      await login(values);
-      navigate(location.state?.from?.pathname || '/dashboard', { replace: true });
+      const signedIn = await login(values);
+      const permissions = new Set(signedIn?.permissions ?? []);
+      const fallback = homeRouteFor((permission) => permissions.has(permission));
+      navigate(location.state?.from?.pathname || fallback, { replace: true });
     } catch (error) {
       const apiError = toApiError(error);
 

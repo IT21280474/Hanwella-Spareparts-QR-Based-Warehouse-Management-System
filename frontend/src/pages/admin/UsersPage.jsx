@@ -40,6 +40,8 @@ const ROLE_TONE = {
   ADMIN: 'danger',
   MANAGER: 'info',
   WAREHOUSE_STAFF: 'success',
+  SALES_PERSON: 'warning',
+  SECURITY: 'info',
   VIEWER: 'neutral',
 };
 

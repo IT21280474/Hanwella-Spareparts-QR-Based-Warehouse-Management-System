@@ -22,6 +22,16 @@ use RuntimeException;
  * insufficient-stock guard a manual stock-out gets — and the whole order
  * commits together or not at all. A failure on line 3 of 5 undoes lines 1
  * and 2 as well; a customer is never billed for a partially-fulfilled order.
+ *
+ * Stock only ever leaves inventory once an order is fully paid — a PENDING
+ * or PARTIALLY_PAID order records what was agreed (its line items) but takes
+ * nothing from stock until `payment_status` reaches PAID, whether that
+ * happens at creation or later via {@see updatePayment()}. `stock_deducted_at`
+ * tracks this explicitly rather than inferring it from payment_status, so
+ * cancelling an order that never took stock never credits phantom units back.
+ * Dispatch ({@see dispatch()}) is a separate, later checkpoint — a fully paid
+ * order still needs a human (Security) to confirm the goods actually left —
+ * and does not move stock again; that already happened at payment time.
  */
 class OrderService
 {
@@ -31,7 +41,7 @@ class OrderService
     ) {}
 
     /**
-     * @param  list<array{part_id: int, quantity: int}>  $items
+     * @param  list<array{part_id: int, quantity: int, discount?: float, note?: ?string}>  $items
      */
     public function create(
         array $items,
@@ -48,24 +58,51 @@ class OrderService
 
         return DB::transaction(function () use ($items, $customerName, $customerPhone, $discount, $paymentStatus, $paymentMode, $requestedPaidAmount) {
             // Resolve every line against the live catalogue first — quantities
-            // are merged so scanning the same part twice adds up rather than
-            // producing two competing deductions against the same row.
+            // (and per-line discount/note) are merged so scanning the same
+            // part twice adds up rather than producing two competing
+            // deductions against the same row. The frontend cart already
+            // guarantees one row per part; this is the defensive fallback,
+            // so a collision summing both discounts and concatenating both
+            // notes is a reasonable, safe default rather than a real UX path.
             $merged = [];
             foreach ($items as $item) {
                 $partId = (int) $item['part_id'];
-                $merged[$partId] = ($merged[$partId] ?? 0) + (int) $item['quantity'];
+                $existing = $merged[$partId] ?? ['quantity' => 0, 'discount' => 0.0, 'note' => null];
+
+                $note = trim((string) ($item['note'] ?? ''));
+                $existing['quantity'] += (int) $item['quantity'];
+                $existing['discount'] += max(0.0, (float) ($item['discount'] ?? 0));
+                $existing['note'] = $existing['note'] && $note !== '' ? "{$existing['note']}; {$note}" : ($existing['note'] ?: ($note ?: null));
+
+                $merged[$partId] = $existing;
             }
 
-            $parts = Part::whereIn('id', array_keys($merged))->get()->keyBy('id');
+            // A sale doesn't ask which bin a part comes from, so it must find
+            // that out itself — stockOut() otherwise looks for a row at
+            // warehouse=null/location=null, which never matches a part's real
+            // (warehouse, location) inventory row and would reject every sale
+            // as "insufficient stock" regardless of what's actually on hand.
+            $parts = Part::whereIn('id', array_keys($merged))
+                ->with(['inventory' => fn ($q) => $q->orderByDesc('quantity')])
+                ->get()->keyBy('id');
 
+            // Subtotal is always the full catalogue price — item discounts are
+            // tracked separately so margin/reporting queries never have to
+            // guess whether a stored price already reflects one.
             $subtotal = 0.0;
-            foreach ($merged as $partId => $quantity) {
+            $itemDiscountTotal = 0.0;
+            foreach ($merged as $partId => $line) {
                 $part = $parts->get($partId) ?? throw new InvalidArgumentException("Part {$partId} no longer exists.");
-                $subtotal += (float) $part->selling_price * $quantity;
+                $lineFullPrice = (float) $part->selling_price * $line['quantity'];
+                $subtotal += $lineFullPrice;
+                $itemDiscountTotal += min($line['discount'], $lineFullPrice);
             }
 
-            $discount = max(0.0, min($discount, $subtotal));
-            $total = round($subtotal - $discount, 2);
+            // The order-level discount applies on top of item-level ones —
+            // clamped to what is left after those, so the two can never
+            // combine into a negative total.
+            $discount = max(0.0, min($discount, $subtotal - $itemDiscountTotal));
+            $total = round($subtotal - $itemDiscountTotal - $discount, 2);
             $paidAmount = $this->resolvePaidAmount($paymentStatus, $total, $requestedPaidAmount);
 
             $order = $this->createWithUniqueNumber([
@@ -82,22 +119,13 @@ class OrderService
                 'ordered_at' => now(),
             ]);
 
-            foreach ($merged as $partId => $quantity) {
+            // The bill's line items are recorded regardless of payment status
+            // — they describe what was agreed. Only PAID orders take stock.
+            foreach ($merged as $partId => $line) {
                 /** @var Part $part */
                 $part = $parts->get($partId);
-
-                // Throws InsufficientStockException, which unwinds the whole
-                // transaction — every line deducted so far in this loop too.
-                $this->stock->stockOut(
-                    $part,
-                    $quantity,
-                    null,
-                    null,
-                    $order->order_no,
-                    "Sold on order {$order->order_no}",
-                    StockMovement::SALE,
-                    $order,
-                );
+                $quantity = $line['quantity'];
+                $lineDiscount = min($line['discount'], (float) $part->selling_price * $quantity);
 
                 SalesOrderItem::create([
                     'sales_order_id' => $order->id,
@@ -106,9 +134,17 @@ class OrderService
                     'part_number' => $part->part_number,
                     'part_name' => $part->name,
                     'unit_price' => $part->selling_price,
+                    'discount' => round($lineDiscount, 2),
                     'quantity' => $quantity,
-                    'line_total' => round((float) $part->selling_price * $quantity, 2),
+                    'line_total' => round((float) $part->selling_price * $quantity - $lineDiscount, 2),
+                    'note' => $line['note'],
                 ]);
+            }
+
+            if ($paymentStatus === SalesOrder::PAID) {
+                // Throws InsufficientStockException, which unwinds the whole
+                // transaction — the order and every item created above too.
+                $this->deductStockForOrder($order, $parts);
             }
 
             $this->audit->log('order.create', $order, [], $order->getAttributes(),
@@ -124,22 +160,41 @@ class OrderService
             throw new InvalidArgumentException('A cancelled order cannot have its payment changed.');
         }
 
-        $before = $order->getAttributes();
+        if ($order->dispatched_at !== null) {
+            throw new InvalidArgumentException('This order has already been dispatched — its payment can no longer be changed.');
+        }
 
-        $order->payment_status = $paymentStatus;
-        $order->paid_amount = $this->resolvePaidAmount($paymentStatus, (float) $order->total, $requestedPaidAmount ?? (float) $order->paid_amount);
-        $order->save();
+        return DB::transaction(function () use ($order, $paymentStatus, $requestedPaidAmount) {
+            $before = $order->getAttributes();
 
-        $this->audit->log('order.payment', $order, $before, $order->getAttributes(),
-            "Order {$order->order_no} payment set to {$paymentStatus}");
+            $order->payment_status = $paymentStatus;
+            $order->paid_amount = $this->resolvePaidAmount($paymentStatus, (float) $order->total, $requestedPaidAmount ?? (float) $order->paid_amount);
+            $order->save();
 
-        return $order->load('items', 'cashier:id,name');
+            // Stock moves exactly on the boundary crossing, in either
+            // direction — becoming PAID takes stock; stepping back off PAID
+            // (e.g. correcting a mistaken "mark paid") returns it. Throws
+            // InsufficientStockException if stock ran out in the meantime,
+            // which unwinds the whole transaction, payment change included.
+            if ($paymentStatus === SalesOrder::PAID && $order->stock_deducted_at === null) {
+                $this->deductStockForOrder($order);
+            } elseif ($paymentStatus !== SalesOrder::PAID && $order->stock_deducted_at !== null) {
+                $this->returnStockForOrder($order, "Order {$order->order_no} payment reverted from paid");
+            }
+
+            $this->audit->log('order.payment', $order, $before, $order->getAttributes(),
+                "Order {$order->order_no} payment set to {$paymentStatus}");
+
+            return $order->load('items', 'cashier:id,name');
+        });
     }
 
     /**
-     * Cancel a completed order. Every line's units are returned to the
-     * inventory row they were deducted from, as a `RETURN` movement — the
-     * original `SALE` movement itself is never edited or removed.
+     * Cancel an order. If it had already taken stock (i.e. it had been paid),
+     * every line's units are returned to the inventory row they came from, as
+     * a `RETURN` movement — the original `SALE` movement itself is never
+     * edited or removed. An order that never took stock (still pending
+     * payment) returns nothing, because nothing was ever taken.
      */
     public function cancel(SalesOrder $order, ?string $reason): SalesOrder
     {
@@ -147,29 +202,15 @@ class OrderService
             throw new InvalidArgumentException('This order is already cancelled.');
         }
 
+        if ($order->dispatched_at !== null) {
+            throw new InvalidArgumentException('This order has already been dispatched and can no longer be cancelled here.');
+        }
+
         return DB::transaction(function () use ($order, $reason) {
             $before = $order->getAttributes();
 
-            foreach ($order->items()->whereNotNull('part_id')->get() as $item) {
-                $part = Part::find($item->part_id);
-
-                // The part itself may since have been deleted; the bill's
-                // snapshot columns still tell the story, but there is no
-                // inventory row left to credit.
-                if ($part === null) {
-                    continue;
-                }
-
-                $this->stock->stockIn(
-                    $part,
-                    $item->quantity,
-                    null,
-                    null,
-                    $order->order_no,
-                    $reason ?? "Order {$order->order_no} cancelled",
-                    StockMovement::RETURN,
-                    $order,
-                );
+            if ($order->stock_deducted_at !== null) {
+                $this->returnStockForOrder($order, $reason ?? "Order {$order->order_no} cancelled");
             }
 
             $order->payment_status = SalesOrder::CANCELLED;
@@ -181,6 +222,103 @@ class OrderService
 
             return $order->load('items', 'cashier:id,name');
         });
+    }
+
+    /**
+     * Security's checkpoint: confirms a fully paid order's goods actually
+     * left. Independent of the stock ledger — that already moved when the
+     * order became PAID — this only records who verified the hand-over, and
+     * when.
+     */
+    public function dispatch(SalesOrder $order): SalesOrder
+    {
+        if ($order->status === 'CANCELLED') {
+            throw new InvalidArgumentException('A cancelled order cannot be dispatched.');
+        }
+
+        if ($order->payment_status !== SalesOrder::PAID) {
+            throw new InvalidArgumentException('This order must be fully paid before it can be dispatched.');
+        }
+
+        if ($order->dispatched_at !== null) {
+            throw new InvalidArgumentException('This order has already been dispatched.');
+        }
+
+        $before = $order->getAttributes();
+
+        $order->dispatched_at = now();
+        $order->dispatched_by = Auth::id();
+        $order->save();
+
+        $this->audit->log('order.dispatch', $order, $before, $order->getAttributes(),
+            "Order {$order->order_no} dispatched by ".(Auth::user()?->name ?? 'unknown'));
+
+        return $order->load('items', 'cashier:id,name', 'dispatchedBy:id,name');
+    }
+
+    /**
+     * Deducts stock for every line of $order and marks it as having done so.
+     * Only ever called when the order is not already marked deducted.
+     *
+     * @param  \Illuminate\Support\Collection<int, Part>|null  $parts  Pre-loaded parts (with inventory eager-loaded), when the caller already has them — avoids a redundant query right after create().
+     */
+    private function deductStockForOrder(SalesOrder $order, $parts = null): void
+    {
+        $items = $order->items()->whereNotNull('part_id')->get();
+
+        if ($parts === null) {
+            $parts = Part::whereIn('id', $items->pluck('part_id'))
+                ->with(['inventory' => fn ($q) => $q->orderByDesc('quantity')])
+                ->get()->keyBy('id');
+        }
+
+        foreach ($items as $item) {
+            $part = $parts->get($item->part_id);
+            if ($part === null) {
+                continue; // the part has since been deleted; the bill's snapshot columns still tell the story
+            }
+            $primaryStock = $part->inventory->first();
+
+            $this->stock->stockOut(
+                $part,
+                $item->quantity,
+                $primaryStock?->warehouse_id,
+                $primaryStock?->location_id,
+                $order->order_no,
+                "Sold on order {$order->order_no}",
+                StockMovement::SALE,
+                $order,
+            );
+        }
+
+        $order->stock_deducted_at = now();
+        $order->save();
+    }
+
+    /** Returns stock for every line of $order and clears the deducted marker. Only ever called when it was previously deducted. */
+    private function returnStockForOrder(SalesOrder $order, ?string $reason): void
+    {
+        foreach ($order->items()->whereNotNull('part_id')->get() as $item) {
+            $part = Part::find($item->part_id);
+            if ($part === null) {
+                continue;
+            }
+            $primaryStock = $part->inventory()->orderByDesc('quantity')->first();
+
+            $this->stock->stockIn(
+                $part,
+                $item->quantity,
+                $primaryStock?->warehouse_id,
+                $primaryStock?->location_id,
+                $order->order_no,
+                $reason ?? "Order {$order->order_no} stock returned",
+                StockMovement::RETURN,
+                $order,
+            );
+        }
+
+        $order->stock_deducted_at = null;
+        $order->save();
     }
 
     /**

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
@@ -35,6 +35,13 @@ function renderCreateForm() {
 }
 
 describe('PartFormPage (create)', () => {
+  // Mock call history otherwise accumulates across tests in this file — a
+  // `.not.toHaveBeenCalled()` assertion must not depend on which tests ran
+  // (or in which order) before it.
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders the required identity and pricing fields', async () => {
     renderCreateForm();
     expect(await screen.findByLabelText('Part name', { exact: false })).toBeInTheDocument();
@@ -80,6 +87,47 @@ describe('PartFormPage (create)', () => {
       selling_price: 4500,
       quantity: 20,
     });
+  });
+
+  it('lets the user assign a specific QR code instead of the next sequential one', async () => {
+    partsApi.create.mockResolvedValueOnce({
+      part: { id: 241, name: 'Brake Pad Set', qr_code: 'SJL-00777' },
+      message: 'Spare part created successfully.',
+    });
+    const user = userEvent.setup();
+    renderCreateForm();
+
+    await user.type(await screen.findByLabelText('Part name', { exact: false }), 'Brake Pad Set');
+    await user.type(screen.getByLabelText('Part number', { exact: false }), '04465-0K260');
+    await user.type(screen.getByLabelText('Selling price', { exact: false }), '4500');
+    await user.clear(screen.getByLabelText('Opening stock', { exact: false }));
+    await user.type(screen.getByLabelText('Opening stock', { exact: false }), '20');
+
+    await user.click(screen.getByRole('radio', { name: 'Use existing code' }));
+    await user.type(screen.getByLabelText('Existing QR code', { exact: false }), 'sjl-00777');
+
+    await user.click(screen.getByRole('button', { name: 'Add spare part' }));
+
+    expect(await screen.findByText('Part detail page')).toBeInTheDocument();
+    const payload = partsApi.create.mock.calls[0][0];
+    expect(payload.qr_code).toBe('SJL-00777');
+  });
+
+  it('requires a code before submitting when "use existing code" is selected', async () => {
+    const user = userEvent.setup();
+    renderCreateForm();
+
+    await user.type(await screen.findByLabelText('Part name', { exact: false }), 'Brake Pad Set');
+    await user.type(screen.getByLabelText('Part number', { exact: false }), '04465-0K260');
+    await user.type(screen.getByLabelText('Selling price', { exact: false }), '4500');
+    await user.clear(screen.getByLabelText('Opening stock', { exact: false }));
+    await user.type(screen.getByLabelText('Opening stock', { exact: false }), '20');
+
+    await user.click(screen.getByRole('radio', { name: 'Use existing code' }));
+    await user.click(screen.getByRole('button', { name: 'Add spare part' }));
+
+    expect(await screen.findByText('Enter the code printed on the physical label.')).toBeInTheDocument();
+    expect(partsApi.create).not.toHaveBeenCalled();
   });
 
   it('maps a server-side uniqueness error onto the part number field', async () => {

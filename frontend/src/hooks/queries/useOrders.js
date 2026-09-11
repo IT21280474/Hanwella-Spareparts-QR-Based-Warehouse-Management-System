@@ -31,6 +31,7 @@ export function useInvalidateOrders() {
     queryClient.invalidateQueries({ queryKey: queryKeys.parts.all() });
     queryClient.invalidateQueries({ queryKey: queryKeys.movements.all() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.securityDashboard() });
     if (id) queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(id) });
   };
 }
@@ -55,6 +56,14 @@ export function useCancelOrder(id) {
   const invalidate = useInvalidateOrders();
   return useMutation({
     mutationFn: (payload) => ordersApi.cancel(id, payload),
+    onSuccess: () => invalidate(id),
+  });
+}
+
+export function useDispatchOrder(id) {
+  const invalidate = useInvalidateOrders();
+  return useMutation({
+    mutationFn: () => ordersApi.dispatch(id),
     onSuccess: () => invalidate(id),
   });
 }

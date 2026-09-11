@@ -23,8 +23,10 @@ class SalesOrderItemResource extends JsonResource
             'part_number' => $this->part_number,
             'qr_code' => $this->qr_code,
             'unit_price' => (float) $this->unit_price,
+            'discount' => (float) $this->discount,
             'quantity' => $this->quantity,
             'line_total' => (float) $this->line_total,
+            'note' => $this->note,
             // Only present when the part still exists and its live stock was
             // eager-loaded by the caller — the order screen's "on hand now"
             // hint, never used to recompute anything on the bill itself.

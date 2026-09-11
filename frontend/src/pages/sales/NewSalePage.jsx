@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Minus, Plus, ScanLine, ShoppingCart, Trash2 } from 'lucide-react';
+import { Minus, Plus, ScanLine, ShoppingCart, Tag, TriangleAlert, Trash2 } from 'lucide-react';
 import { useCreateOrder } from '@/hooks/queries/useOrders';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { cartTotals, useCartStore } from '@/store/cartStore';
+import { cartTotals, isBelowCost, lineTotal, useCartStore } from '@/store/cartStore';
 import { useScanStore } from '@/store/scanStore';
 import { toast } from '@/store/toastStore';
 import {
@@ -51,7 +51,16 @@ export default function NewSalePage() {
   const recent = useScanStore((state) => state.recent);
 
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [expandedLines, setExpandedLines] = useState(() => new Set());
   const createOrder = useCreateOrder();
+
+  const toggleLineExtra = (partId) =>
+    setExpandedLines((current) => {
+      const next = new Set(current);
+      if (next.has(partId)) next.delete(partId);
+      else next.add(partId);
+      return next;
+    });
 
   const partiallyPaid = cart.paymentStatus === PAYMENT_STATUS.PARTIALLY_PAID;
   const [paidAmount, setPaidAmount] = useState('');
@@ -70,9 +79,10 @@ export default function NewSalePage() {
     else toast.error('Out of stock', `${part.name} has no units on hand.`);
   };
 
-  const checkout = () => {
-    if (totals.lineCount === 0) return;
+  const belowCostLines = cart.lines.filter(isBelowCost);
+  const [confirmingBelowCost, setConfirmingBelowCost] = useState(false);
 
+  const submitOrder = () => {
     const payload = {
       customer_name: cart.customerName.trim() || 'Walk-in customer',
       customer_phone: cart.customerPhone.trim() || null,
@@ -80,7 +90,12 @@ export default function NewSalePage() {
       payment_status: cart.paymentStatus,
       payment_mode: cart.paymentMode,
       paid_amount: paid,
-      items: cart.lines.map((line) => ({ part_id: line.partId, quantity: line.quantity })),
+      items: cart.lines.map((line) => ({
+        part_id: line.partId,
+        quantity: line.quantity,
+        discount: Number(line.discount) || 0,
+        note: line.note?.trim() || null,
+      })),
     };
 
     createOrder.mutate(payload, {
@@ -97,6 +112,15 @@ export default function NewSalePage() {
         );
       },
     });
+  };
+
+  const checkout = () => {
+    if (totals.lineCount === 0) return;
+    if (belowCostLines.length > 0) {
+      setConfirmingBelowCost(true);
+      return;
+    }
+    submitOrder();
   };
 
   return (
@@ -169,56 +193,102 @@ export default function NewSalePage() {
               <ul className="sale__lines">
                 {cart.lines.map((line) => {
                   const remaining = line.available - line.quantity;
+                  const hasExtra = Boolean(Number(line.discount) || line.note);
+                  const showExtra = hasExtra || expandedLines.has(line.partId);
+                  const belowCost = isBelowCost(line);
                   return (
                     <li key={line.partId} className="sale__line">
-                      <QrImage code={line.qrCode} size={34} />
+                      <div className="sale__line-row">
+                        <QrImage code={line.qrCode} size={34} />
 
-                      <div className="sale__line-text">
-                        <p className="sale__line-name">{line.name}</p>
-                        <p className="sale__line-meta">
-                          <span className="mono">{line.partNumber}</span>
-                          <span className="sale__sep" aria-hidden="true">
-                            |
+                        <div className="sale__line-text">
+                          <p className="sale__line-name">{line.name}</p>
+                          <p className="sale__line-meta">
+                            <span className="mono">{line.partNumber}</span>
+                            <span className="sale__sep" aria-hidden="true">
+                              |
+                            </span>
+                            <span>{money(line.unitPrice)} each</span>
+                          </p>
+                          {belowCost ? (
+                            <p className="sale__line-warning">
+                              <TriangleAlert size={12} strokeWidth={2} aria-hidden="true" />
+                              Selling below cost ({money(line.costPrice)})
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="sale__line-stepper">
+                          <IconButton
+                            icon={Minus}
+                            label={`Reduce ${line.name}`}
+                            onClick={() => cart.decrement(line.partId)}
+                          />
+                          <Input
+                            size="sm"
+                            value={line.quantity}
+                            inputMode="numeric"
+                            className="sale__line-qty"
+                            aria-label={`Quantity of ${line.name}`}
+                            onChange={(event) =>
+                              cart.setQuantity(line.partId, event.target.value.replace(/[^0-9]/g, ''))
+                            }
+                          />
+                          <IconButton
+                            icon={Plus}
+                            label={`Add another ${line.name}`}
+                            onClick={() => cart.increment(line.partId)}
+                            disabled={line.quantity >= line.available}
+                          />
+                        </div>
+
+                        <IconButton
+                          icon={Tag}
+                          label={`Discount or note for ${line.name}`}
+                          className={hasExtra ? 'sale__line-tag is-active' : 'sale__line-tag'}
+                          onClick={() => toggleLineExtra(line.partId)}
+                        />
+
+                        <div className="sale__line-right">
+                          <span className="sale__line-total num" data-below-cost={belowCost ? 'true' : undefined}>
+                            {money(lineTotal(line))}
                           </span>
-                          <span>{money(line.unitPrice)} each</span>
-                        </p>
-                      </div>
+                          <span className="sale__line-left" data-low={remaining <= 0 ? 'true' : undefined}>
+                            {remaining <= 0 ? 'None left after sale' : `${number(remaining)} left after sale`}
+                          </span>
+                        </div>
 
-                      <div className="sale__line-stepper">
                         <IconButton
-                          icon={Minus}
-                          label={`Reduce ${line.name}`}
-                          onClick={() => cart.decrement(line.partId)}
-                        />
-                        <Input
-                          size="sm"
-                          value={line.quantity}
-                          inputMode="numeric"
-                          className="sale__line-qty"
-                          aria-label={`Quantity of ${line.name}`}
-                          onChange={(event) => cart.setQuantity(line.partId, event.target.value.replace(/[^0-9]/g, ''))}
-                        />
-                        <IconButton
-                          icon={Plus}
-                          label={`Add another ${line.name}`}
-                          onClick={() => cart.increment(line.partId)}
-                          disabled={line.quantity >= line.available}
+                          icon={Trash2}
+                          label={`Remove ${line.name}`}
+                          variant="danger"
+                          onClick={() => cart.remove(line.partId)}
                         />
                       </div>
 
-                      <div className="sale__line-right">
-                        <span className="sale__line-total num">{money(line.unitPrice * line.quantity)}</span>
-                        <span className="sale__line-left" data-low={remaining <= 0 ? 'true' : undefined}>
-                          {remaining <= 0 ? 'None left after sale' : `${number(remaining)} left after sale`}
-                        </span>
-                      </div>
-
-                      <IconButton
-                        icon={Trash2}
-                        label={`Remove ${line.name}`}
-                        variant="danger"
-                        onClick={() => cart.remove(line.partId)}
-                      />
+                      {showExtra ? (
+                        <div className="sale__line-extra">
+                          <Input
+                            size="sm"
+                            value={line.discount}
+                            inputMode="numeric"
+                            prefix="Rs"
+                            placeholder="0"
+                            aria-label={`Discount for ${line.name}`}
+                            className="sale__line-discount"
+                            onChange={(event) => cart.setLineDiscount(line.partId, event.target.value)}
+                          />
+                          <Input
+                            size="sm"
+                            value={line.note}
+                            maxLength={200}
+                            placeholder="Remark — e.g. slightly scratched casing"
+                            aria-label={`Remark for ${line.name}`}
+                            className="sale__line-remark"
+                            onChange={(event) => cart.setLineNote(line.partId, event.target.value)}
+                          />
+                        </div>
+                      ) : null}
                     </li>
                   );
                 })}
@@ -326,6 +396,12 @@ export default function NewSalePage() {
                   <dt>Subtotal</dt>
                   <dd className="num">{money(totals.subtotal)}</dd>
                 </div>
+                {totals.itemDiscountTotal > 0 ? (
+                  <div>
+                    <dt>Item discounts</dt>
+                    <dd className="num">− {money(totals.itemDiscountTotal)}</dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>Discount</dt>
                   <dd className="num">{totals.discount ? `− ${money(totals.discount)}` : money(0)}</dd>
@@ -341,6 +417,13 @@ export default function NewSalePage() {
                   </div>
                 ) : null}
               </dl>
+
+              {belowCostLines.length > 0 ? (
+                <p className="sale__cost-warning">
+                  <TriangleAlert size={14} strokeWidth={2} aria-hidden="true" />
+                  {pluralize(belowCostLines.length, 'item')} priced below cost — confirmation will be asked for.
+                </p>
+              ) : null}
 
               <Button
                 size="lg"
@@ -376,6 +459,25 @@ export default function NewSalePage() {
           {pluralize(totals.lineCount, 'line item')} will be removed from the basket. No stock has moved, so nothing
           else is affected.
         </p>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={confirmingBelowCost}
+        onClose={() => setConfirmingBelowCost(false)}
+        onConfirm={() => {
+          setConfirmingBelowCost(false);
+          submitOrder();
+        }}
+        title="Complete this sale below cost?"
+        confirmLabel="Sell anyway"
+      >
+        <div className="sale__confirm">
+          {belowCostLines.map((line) => (
+            <p key={line.partId} className="sale__cost-warning-row">
+              {line.name} — selling at {money(lineTotal(line) / line.quantity)}, cost is {money(line.costPrice)}
+            </p>
+          ))}
+        </div>
       </ConfirmDialog>
     </div>
   );

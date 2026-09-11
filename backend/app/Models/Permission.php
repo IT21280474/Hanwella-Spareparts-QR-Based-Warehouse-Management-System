@@ -38,6 +38,9 @@ class Permission extends Model
             'create_stock_in' => 'Record stock in',
             'create_stock_out' => 'Record stock out and sales',
         ],
+        'Dispatch' => [
+            'dispatch_orders' => 'Verify and dispatch fully paid orders',
+        ],
         'Reports' => [
             'view_reports' => 'View reports',
             'export_reports' => 'Export reports',

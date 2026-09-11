@@ -20,6 +20,8 @@ class UserSeeder extends Seeder
         ['Sadeeka Perera', 'sadeeka@hanwellaspares.lk', Role::ADMIN],
         ['Ruwan Perera', 'ruwan@hanwellaspares.lk', Role::MANAGER],
         ['Kasun Adikari', 'kasun@hanwellaspares.lk', Role::WAREHOUSE_STAFF],
+        ['Chamara Fernando', 'chamara@hanwellaspares.lk', Role::SALES_PERSON],
+        ['Ravi Bandara', 'ravi@hanwellaspares.lk', Role::SECURITY],
         ['Nimali Silva', 'nimali@hanwellaspares.lk', Role::VIEWER],
     ];
 

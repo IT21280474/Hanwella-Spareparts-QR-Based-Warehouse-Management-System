@@ -39,7 +39,10 @@ export const useCartStore = create()(
                   partNumber: part.part_number,
                   qrCode: part.qr_code,
                   unitPrice: Number(part.selling_price) || 0,
+                  costPrice: Number(part.cost_price) || 0,
                   available,
+                  discount: '',
+                  note: '',
                 },
               ],
             };
@@ -81,6 +84,19 @@ export const useCartStore = create()(
       remove: (partId) =>
         set((state) => ({ lines: state.lines.filter((line) => line.partId !== partId) })),
 
+      /** A Rupee amount off this line, not a price override — see OrderService. */
+      setLineDiscount: (partId, discount) =>
+        set((state) => ({
+          lines: state.lines.map((line) =>
+            line.partId === partId ? { ...line, discount: String(discount).replace(/[^0-9]/g, '') } : line,
+          ),
+        })),
+
+      setLineNote: (partId, note) =>
+        set((state) => ({
+          lines: state.lines.map((line) => (line.partId === partId ? { ...line, note } : line)),
+        })),
+
       setCustomerName: (customerName) => set({ customerName }),
       setCustomerPhone: (customerPhone) => set({ customerPhone }),
       setDiscount: (discount) => set({ discount: String(discount).replace(/[^0-9]/g, '') }),
@@ -100,10 +116,44 @@ export const useCartStore = create()(
   ),
 );
 
-/** Derived totals, computed in one place so the cart and the summary agree. */
+/**
+ * Derived totals, computed in one place so the cart and the summary agree.
+ * Mirrors OrderService::create() exactly: item discounts come off the
+ * subtotal first, then the order-level discount claims what is left — the
+ * server recomputes all of this itself, but the till must show the same
+ * number it is about to charge.
+ */
 export function cartTotals(state) {
   const subtotal = state.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-  const discount = Math.min(Number(state.discount) || 0, subtotal);
+  const itemDiscountTotal = state.lines.reduce(
+    (sum, line) => sum + Math.min(Number(line.discount) || 0, line.unitPrice * line.quantity),
+    0,
+  );
+  const discount = Math.min(Number(state.discount) || 0, subtotal - itemDiscountTotal);
   const units = state.lines.reduce((sum, line) => sum + line.quantity, 0);
-  return { subtotal, discount, total: subtotal - discount, units, lineCount: state.lines.length };
+  return {
+    subtotal,
+    itemDiscountTotal,
+    discount,
+    total: subtotal - itemDiscountTotal - discount,
+    units,
+    lineCount: state.lines.length,
+  };
+}
+
+/** A single line's own total after its own discount, before the order-level one. */
+export function lineTotal(line) {
+  const full = line.unitPrice * line.quantity;
+  return full - Math.min(Number(line.discount) || 0, full);
+}
+
+/**
+ * True once this line's discount brings its average per-unit price below
+ * what the part cost to bring in — the sale would run at a loss on this
+ * line. A part with no recorded cost price (0) never triggers this; there
+ * is nothing to compare against.
+ */
+export function isBelowCost(line) {
+  if (!line.costPrice) return false;
+  return lineTotal(line) / line.quantity < line.costPrice;
 }

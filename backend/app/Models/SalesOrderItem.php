@@ -12,13 +12,14 @@ class SalesOrderItem extends Model
 
     protected $fillable = [
         'sales_order_id', 'part_id', 'qr_code', 'part_number', 'part_name',
-        'unit_price', 'quantity', 'line_total',
+        'unit_price', 'discount', 'quantity', 'line_total', 'note',
     ];
 
     protected function casts(): array
     {
         return [
             'unit_price' => 'decimal:2',
+            'discount' => 'decimal:2',
             'line_total' => 'decimal:2',
             'quantity' => 'integer',
         ];

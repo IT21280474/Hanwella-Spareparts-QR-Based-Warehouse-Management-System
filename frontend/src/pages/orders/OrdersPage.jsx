@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Printer, ReceiptText, ShoppingCart, X } from 'lucide-react';
-import { useOrdersQuery } from '@/hooks/queries/useOrders';
+import { useMutation } from '@tanstack/react-query';
+import { ChevronRight, Printer, ReceiptText, ShoppingCart, Truck, X } from 'lucide-react';
+import { useInvalidateOrders, useOrdersQuery } from '@/hooks/queries/useOrders';
+import { ordersApi } from '@/services/api';
+import { toast } from '@/store/toastStore';
 import { useTableParams } from '@/hooks/useTableParams';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -73,6 +76,16 @@ export default function OrdersPage() {
   const { data, isLoading, isFetching, isError, error, refetch } = useOrdersQuery(query);
   const rows = data?.rows ?? [];
   const meta = data?.meta;
+
+  const invalidateOrders = useInvalidateOrders();
+  const dispatchOrder = useMutation({
+    mutationFn: (orderId) => ordersApi.dispatch(orderId),
+    onSuccess: (result, orderId) => {
+      invalidateOrders(orderId);
+      toast.success('Order dispatched', result.message || 'Goods released.');
+    },
+    onError: (dispatchError) => toast.fromError(dispatchError, 'Could not dispatch this order'),
+  });
 
   const counts = meta?.status_counts;
   const tabs = STATUS_TABS.map((tab) => ({
@@ -229,6 +242,14 @@ export default function OrdersPage() {
 
                       <Td>
                         <div className="table__row-actions">
+                          {can(PERMISSIONS.DISPATCH_ORDERS) && order.ready_for_dispatch ? (
+                            <IconButton
+                              icon={Truck}
+                              label={`Dispatch ${order.order_no}`}
+                              onClick={() => dispatchOrder.mutate(order.id)}
+                              disabled={dispatchOrder.isPending}
+                            />
+                          ) : null}
                           <IconButton
                             icon={Printer}
                             label={`Print bill for ${order.order_no}`}

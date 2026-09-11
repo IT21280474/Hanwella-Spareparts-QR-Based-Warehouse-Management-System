@@ -106,6 +106,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     422,
                 ),
 
+                // Same reasoning, different base class: every
+                // InvalidArgumentException across the app is a rejected
+                // state transition or bad input value (an order that is
+                // already cancelled/dispatched, an unknown report type),
+                // never a genuine crash.
+                $e instanceof InvalidArgumentException => ApiResponse::error(
+                    $e->getMessage(),
+                    422,
+                ),
+
                 // Anything unmodelled: log it in full, tell the client nothing.
                 default => ApiResponse::error(
                     config('app.debug')

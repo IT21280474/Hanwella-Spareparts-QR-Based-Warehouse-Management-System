@@ -1,8 +1,8 @@
 import { lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { AppLayout, AuthLayout } from '@/layouts';
 import { PERMISSIONS } from '@/constants/permissions';
-import { GuestRoute, ProtectedRoute } from './ProtectedRoute';
+import { GuestRoute, HomeRedirect, ProtectedRoute } from './ProtectedRoute';
 
 /**
  * Route table.
@@ -16,6 +16,7 @@ const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
+const SecurityDashboardPage = lazy(() => import('@/pages/dashboard/SecurityDashboardPage'));
 const InventoryListPage = lazy(() => import('@/pages/inventory/InventoryListPage'));
 const PartDetailPage = lazy(() => import('@/pages/inventory/PartDetailPage'));
 const PartFormPage = lazy(() => import('@/pages/inventory/PartFormPage'));
@@ -52,10 +53,14 @@ export function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<HomeRedirect />} />
 
           <Route element={<ProtectedRoute permission={PERMISSIONS.VIEW_DASHBOARD} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute permission={PERMISSIONS.DISPATCH_ORDERS} />}>
+            <Route path="/security" element={<SecurityDashboardPage />} />
           </Route>
 
           <Route element={<ProtectedRoute permission={PERMISSIONS.VIEW_INVENTORY} />}>

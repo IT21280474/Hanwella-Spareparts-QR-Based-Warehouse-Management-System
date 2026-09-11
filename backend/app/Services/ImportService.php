@@ -109,7 +109,19 @@ class ImportService
                     ])->save();
 
                     if ($row['quantity'] > 0) {
-                        $this->stock->stockIn($existing, (int) $row['quantity'], null, null, 'IMPORT', 'Bulk Excel import');
+                        // Top up the part's actual bin, not a phantom
+                        // warehouse=null/location=null row — an existing part
+                        // (unlike a brand-new one two lines below) may already
+                        // have real stock sitting in a specific location.
+                        $primaryStock = $existing->inventory()->orderByDesc('quantity')->first();
+                        $this->stock->stockIn(
+                            $existing,
+                            (int) $row['quantity'],
+                            $primaryStock?->warehouse_id,
+                            $primaryStock?->location_id,
+                            'IMPORT',
+                            'Bulk Excel import',
+                        );
                     }
 
                     $updated++;

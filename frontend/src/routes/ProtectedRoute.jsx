@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { homeRouteFor } from '@/constants/permissions';
 import { Spinner } from '@/components/ui';
 
 /**
@@ -36,7 +37,7 @@ export function ProtectedRoute({ permission }) {
 
 /** Keeps a signed-in user out of the login screen. */
 export function GuestRoute() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, can } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -48,8 +49,14 @@ export function GuestRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={location.state?.from?.pathname || '/dashboard'} replace />;
+    return <Navigate to={location.state?.from?.pathname || homeRouteFor(can)} replace />;
   }
 
   return <Outlet />;
+}
+
+/** Sends a freshly-loaded `/` to whichever screen this account can actually see. */
+export function HomeRedirect() {
+  const { can } = useAuth();
+  return <Navigate to={homeRouteFor(can)} replace />;
 }

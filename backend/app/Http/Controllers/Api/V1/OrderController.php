@@ -75,7 +75,7 @@ class OrderController extends Controller
 
     public function show(SalesOrder $order): JsonResponse
     {
-        $order->load(['cashier:id,name', 'items.part' => fn ($q) => $q->withStock()]);
+        $order->load(['cashier:id,name', 'dispatchedBy:id,name', 'items.part' => fn ($q) => $q->withStock()]);
 
         return ApiResponse::success(new SalesOrderResource($order), 'Order retrieved successfully.');
     }
@@ -95,5 +95,12 @@ class OrderController extends Controller
         $order = $this->orders->cancel($order, $request->string('reason')->toString() ?: null);
 
         return ApiResponse::success(new SalesOrderResource($order), "Order {$order->order_no} cancelled. Units have been returned to stock.");
+    }
+
+    public function dispatch(SalesOrder $order): JsonResponse
+    {
+        $order = $this->orders->dispatch($order);
+
+        return ApiResponse::success(new SalesOrderResource($order), "Order {$order->order_no} dispatched.");
     }
 }

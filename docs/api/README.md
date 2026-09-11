@@ -17,6 +17,11 @@ slug, checked server-side by the `permission:<slug>` middleware
 slugs separated by a comma (only `GET /qr/{code}`) accepts *either* one. Permission slugs
 are fixed by `database/seeders/RolePermissionSeeder.php`:
 
+Two dashboard endpoints exist: `GET /dashboard` (`view_dashboard` — the full warehouse
+overview) and `GET /dashboard/security` (`dispatch_orders` — Security's own overview:
+`ready_for_dispatch`/`dispatched_today`/`dispatched_total` KPIs, a ready-orders queue
+oldest-paid-first, and recent dispatch history; never touches `parts`/`inventory`).
+
 | Group | Slugs |
 |---|---|
 | Dashboard | `view_dashboard` |
@@ -25,10 +30,13 @@ are fixed by `database/seeders/RolePermissionSeeder.php`:
 | Stock | `view_transactions`, `create_stock_in`, `create_stock_out` |
 | Reports | `view_reports`, `export_reports` |
 | Administration | `manage_users`, `manage_settings` |
+| Dispatch | `dispatch_orders` |
 
-The **ADMIN** role holds every permission. **MANAGER**, **WAREHOUSE_STAFF** and **VIEWER**
-hold the subsets defined in that seeder (see the root README §9, or `RoleController`'s
-`GET /roles` at runtime).
+The **ADMIN** role holds every permission. **MANAGER**, **WAREHOUSE_STAFF**, **SALES_PERSON**,
+**SECURITY** and **VIEWER** hold the subsets defined in that seeder (see the root README §9,
+or `RoleController`'s `GET /roles` at runtime). **SECURITY** holds only `view_transactions`
+and `dispatch_orders` — it exists solely as a gate checkpoint for the dispatch workflow
+below, with no access to inventory, reports, or user administration.
 
 **Response envelope.** Every endpoint returns one of these three shapes
 (`app/Support/ApiResponse.php`):
@@ -112,13 +120,21 @@ max 4MB, `multipart/form-data` only), `remove_image` (optional boolean, update o
 the photo without a replacement), `category_id` (required, must exist), `supplier_id`,
 `vehicle_model_id`, `unit`, `selling_price` (required, ≥0), `cost_price`, `min_stock`,
 `status` (`ACTIVE`|`ARCHIVED`), and on **create only**: `quantity` (required, ≥0 — opening
-stock), `warehouse_id`, `location_id`.
+stock), `warehouse_id`, `location_id`, `qr_code` (optional — see below). `qr_code` is
+`prohibited` on update: attempting to set it on `PUT`/`POST .../{part}` returns a
+validation error rather than silently ignoring it.
 
-Creating a part auto-assigns it a QR identity and, if `quantity` > 0, records an opening
-`STOCK_IN` movement — both inside the same transaction as the part insert. An uploaded
-image is stored on the `public` disk (`storage/app/public/parts/…`, served via
-`/storage/…`) outside that transaction, since file I/O isn't transactional; replacing or
-removing a photo deletes the previous file.
+Creating a part auto-assigns it the next sequential QR identity, unless `qr_code` names a
+specific one — for a part whose bin already carries a pre-printed physical label (from the
+original `SJL-00001`..`SJL-01000` sheet) predating its entry into the system. The code is
+normalised to uppercase, must match the configured `<prefix>-<padded sequence>` format
+(`QrService::assignSpecific()`), and is rejected (422, nothing created — the whole
+transaction rolls back) if malformed or already assigned to another part. If `quantity` > 0,
+an opening `STOCK_IN` movement is also recorded — all three (part, QR identity, opening
+movement) share one transaction. An uploaded image is stored on the `public` disk
+(`storage/app/public/parts/…`, served via `/storage/…`) outside that transaction, since file
+I/O isn't transactional; replacing or removing a photo deletes the previous file, unless
+another part still references the same one (see `PartImageService`).
 
 `PartResource` shape: `id, part_number, sku, name, description, image_url, qr_code,
 category: {id,name}, supplier: {id,name}, vehicle_make_id, vehicle_model_id, vehicle_make,
@@ -205,21 +221,48 @@ location` (full path string), `user: {id,name}, created_at`.
 | GET | `/orders/{order}` | `view_transactions` | includes line items |
 | PATCH | `/orders/{order}/payment` | `create_stock_out` | change payment status/amount |
 | POST | `/orders/{order}/cancel` | `create_stock_out` | reverses stock, `reason?` |
+| POST | `/orders/{order}/dispatch` | `dispatch_orders` | Security's gate checkpoint |
 
 `POST /orders` body (`CreateOrderRequest`): `customer_name?`, `customer_phone?`,
-`discount?`, `payment_status` (required: `PAID`|`PENDING`|`PARTIALLY_PAID`),
-`payment_mode` (required: `CASH`|`CARD`|`BANK_TRANSFER`|`CREDIT`), `paid_amount?`,
-`items` (required, ≥1 entry) — each `{part_id, quantity}`. Stock is deducted per line inside
-one transaction; insufficient stock on any line rolls back the whole order (`409`).
+`discount?` (order-level, a Rupee amount), `payment_status` (required:
+`PAID`|`PENDING`|`PARTIALLY_PAID`), `payment_mode` (required:
+`CASH`|`CARD`|`BANK_TRANSFER`|`CREDIT`), `paid_amount?`, `items` (required, ≥1 entry) —
+each `{part_id, quantity, discount?, note?}`. `items.*.discount` is a per-line Rupee
+amount off that line's `(unit_price * quantity)` — same semantic as the order-level
+`discount`, not a price override, so `unit_price` in the stored bill always stays the true
+catalogue price. `items.*.note` (≤200 chars) is a free-text remark against that line (e.g.
+"slightly scratched casing"). Item discounts come off the subtotal first; the order-level
+discount then applies to whatever is left, so the two compose without ever driving the
+total negative.
 
-Cancelling an order returns every line's quantity to stock via a compensating movement — it
-never deletes or edits the original sale rows.
+**Stock only leaves inventory once an order is fully paid** — never at order creation for a
+`PENDING`/`PARTIALLY_PAID` order. `SalesOrder.stock_deducted_at` (nullable timestamp) tracks
+this explicitly rather than inferring it from `payment_status`, so a later reversal always
+knows whether anything needs to be returned. The deduction/return is symmetric and happens
+on whichever transition crosses the PAID boundary:
+- Order created directly as `PAID`, or `PATCH .../payment` moves an unpaid order to `PAID`:
+  stock is deducted per line, from the part's actual inventory row (warehouse + location),
+  resolved server-side, never from the client — inside one transaction; insufficient stock
+  on any line rolls back the whole operation (`409`).
+- `PATCH .../payment` moves a `PAID` order to any other status, or `POST .../cancel`
+  cancels an order whose stock was already deducted: stock is returned via a compensating
+  movement. Cancelling an order that was never paid (stock never left) touches no inventory.
+
+`POST /orders/{order}/dispatch` is Security's checkpoint: it verifies the order is `PAID`,
+not `CANCELLED`, and not already dispatched, then stamps `dispatched_at`/`dispatched_by` —
+it does **not** move stock again (that already happened at payment time). Once dispatched,
+an order is immutable: both `PATCH .../payment` and `POST .../cancel` reject it (`422`)
+with "already been dispatched" errors, regardless of role.
 
 `SalesOrderResource`: `id, order_no, customer_name, customer_phone, subtotal, discount,
 total, paid_amount, outstanding, payment_status, payment_mode, status, items_count, cashier:
-{id,name}, ordered_at, items: [SalesOrderItemResource]`. Line items are point-in-time
-**snapshots** (`part_name`, `part_number`, `qr_code`, `unit_price` copied at sale time) — a
-printed bill reads identically even if the part is later renamed, repriced, or deleted.
+{id,name}, ordered_at, stock_deducted_at, dispatched_at, dispatched_by: {id,name}?,
+ready_for_dispatch, items: [SalesOrderItemResource]`. `ready_for_dispatch` is `true` only
+when `payment_status === PAID && status !== CANCELLED && dispatched_at === null` — it is
+what both the Orders list and the Security account key off to show/enable the dispatch
+action. Line items are point-in-time **snapshots** (`part_name`, `part_number`, `qr_code`,
+`unit_price` copied at sale time) — a printed bill reads identically even if the part is
+later renamed, repriced, or deleted.
 
 ## Reference data — Categories, Suppliers, Warehouses, Locations
 

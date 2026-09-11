@@ -31,6 +31,10 @@ function renderAt(initialPath) {
               <Route path="/users" element={<p>Users admin page</p>} />
             </Route>
 
+            <Route element={<ProtectedRoute permission="view_transactions" />}>
+              <Route path="/orders" element={<p>Orders page</p>} />
+            </Route>
+
             <Route path="/403" element={<p>Forbidden</p>} />
           </Routes>
         </AuthProvider>
@@ -71,10 +75,17 @@ describe('ProtectedRoute', () => {
 
 describe('GuestRoute', () => {
   it('keeps a signed-in user out of /login by sending them to the dashboard', async () => {
-    authApi.me.mockResolvedValueOnce({ id: 1, name: 'Sadeeka', permissions: [] });
+    authApi.me.mockResolvedValueOnce({ id: 1, name: 'Sadeeka', permissions: ['view_dashboard'] });
     renderAt('/login');
 
     expect(await screen.findByText('Dashboard home')).toBeInTheDocument();
+  });
+
+  it('sends a signed-in user who cannot see the dashboard to their own first accessible page', async () => {
+    authApi.me.mockResolvedValueOnce({ id: 6, name: 'Ravi', permissions: ['view_transactions'] });
+    renderAt('/login');
+
+    expect(await screen.findByText('Orders page')).toBeInTheDocument();
   });
 
   it('lets a guest reach /login', async () => {

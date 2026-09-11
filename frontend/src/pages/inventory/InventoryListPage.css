@@ -55,6 +55,21 @@
   color: var(--color-ink-2);
 }
 
+.inventory__thumb {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.inventory__thumb--empty {
+  display: grid;
+  place-items: center;
+  background: var(--color-bg-3);
+  color: var(--color-muted-2);
+}
+
 .inventory__qty {
   font-weight: 600;
 }

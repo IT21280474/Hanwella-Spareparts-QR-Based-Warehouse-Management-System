@@ -210,9 +210,11 @@ not use these in production; deactivate or replace them before go-live.**
 | Sadeeka Perera | `sadeeka@hanwellaspares.lk` | Admin — full access, including users, settings, audit log |
 | Ruwan Perera | `ruwan@hanwellaspares.lk` | Manager — operations + reporting/exports |
 | Kasun Adikari | `kasun@hanwellaspares.lk` | Warehouse staff — scanning, stock movements, counter sales |
+| Chamara Fernando | `chamara@hanwellaspares.lk` | Sales person — counter sales only, no stock-in/adjustments/labels |
+| Ravi Bandara | `ravi@hanwellaspares.lk` | Security — gate checkpoint, verifies and dispatches fully paid orders only |
 | Nimali Silva | `nimali@hanwellaspares.lk` | Viewer — read-only |
 
-Password for all four: the value of `DEV_SEED_PASSWORD` in `backend/.env`, or `password` if
+Password for all: the value of `DEV_SEED_PASSWORD` in `backend/.env`, or `password` if
 that variable is left unset.
 
 ## 10. QR workflow
@@ -224,8 +226,12 @@ that variable is left unset.
   unit of that part across every bin in every warehouse. `qr_codes.code`, `.sequence` and
   `.part_id` all carry database unique constraints; the sequence is only ever assigned
   server-side (`QrService`), never accepted from the client.
-- **Issuing**: a new part is assigned a QR identity automatically on creation
-  (`POST /parts`); `POST /qr/generate` backfills identities for any part missing one.
+- **Issuing**: a new part is assigned the next sequential QR identity automatically on
+  creation (`POST /parts`); `POST /qr/generate` backfills identities for any part missing
+  one. Alternatively, `POST /parts` can specify `qr_code` to assign a specific,
+  already-known code instead — for a part whose bin already carries one of the
+  pre-printed physical labels from the original sheet. Fixed for the life of the part
+  either way: an update can never change or set it.
 - **Scanning**: `POST /qr/scan` resolves a code to its part and current stock. The scanned
   string is never trusted as anything more than a lookup key — every field on the response
   comes from the database.

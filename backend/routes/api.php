@@ -61,6 +61,9 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:view_dashboard');
 
+        Route::get('dashboard/security', [DashboardController::class, 'security'])
+            ->middleware('permission:dispatch_orders');
+
         // ---- Parts (catalogue CRUD) ----
         Route::middleware('permission:view_inventory')->group(function () {
             Route::get('parts', [PartController::class, 'index']);
@@ -101,6 +104,7 @@ Route::prefix('v1')->group(function () {
         Route::post('orders', [OrderController::class, 'store'])->middleware('permission:create_stock_out');
         Route::patch('orders/{order}/payment', [OrderController::class, 'updatePayment'])->middleware('permission:create_stock_out');
         Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('permission:create_stock_out');
+        Route::post('orders/{order}/dispatch', [OrderController::class, 'dispatch'])->middleware('permission:dispatch_orders');
 
         // ---- Reference data ----
         Route::middleware('permission:view_inventory')->group(function () {

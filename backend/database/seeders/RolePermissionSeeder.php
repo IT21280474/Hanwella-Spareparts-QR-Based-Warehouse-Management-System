@@ -29,6 +29,22 @@ class RolePermissionSeeder extends Seeder
             'scan_qr', 'print_labels',
             'view_transactions', 'create_stock_in', 'create_stock_out',
         ],
+        // Deliberately narrower than WAREHOUSE_STAFF: a counter sales
+        // account can look up stock, scan a part and complete/cancel a
+        // sale, but cannot receive stock, adjust quantities or print
+        // labels — those stay warehouse-management duties, not sales ones.
+        Role::SALES_PERSON => [
+            'view_dashboard',
+            'view_inventory',
+            'scan_qr',
+            'view_transactions', 'create_stock_out',
+        ],
+        // The gate checkpoint: sees fully paid orders and confirms goods
+        // physically leave. No inventory, pricing or sales access at all —
+        // dispatching is a verification duty, not a selling or stock one.
+        Role::SECURITY => [
+            'view_transactions', 'dispatch_orders',
+        ],
         Role::VIEWER => [
             'view_dashboard',
             'view_inventory',
@@ -41,6 +57,8 @@ class RolePermissionSeeder extends Seeder
         Role::ADMIN => ['Warehouse admin', 'Full access including users, settings and audit logs.'],
         Role::MANAGER => ['Warehouse manager', 'Day-to-day operations plus reporting and exports.'],
         Role::WAREHOUSE_STAFF => ['Warehouse staff', 'Scanning, stock movements and counter sales.'],
+        Role::SALES_PERSON => ['Sales person', 'Counter sales only — scan, sell and view stock, no stock-in, adjustments or labels.'],
+        Role::SECURITY => ['Security', 'Gate checkpoint — verifies and dispatches fully paid orders only.'],
         Role::VIEWER => ['Viewer', 'Read-only access to inventory, movements and reports.'],
     ];
 

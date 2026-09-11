@@ -52,6 +52,29 @@ it('lets a manager export reports', function () {
     $this->actingAs($manager)->getJson('/api/v1/reports/inventory/export')->assertOk();
 });
 
+it('lets a sales person sell but not receive, adjust or print labels', function () {
+    $salesPerson = makeRoleUser(Role::SALES_PERSON);
+    $warehouse = makeWarehouse();
+    $part = makePart();
+    app(App\Services\StockService::class)->stockIn($part, 10, $warehouse->id, null);
+
+    $this->actingAs($salesPerson)->postJson('/api/v1/orders', [
+        'payment_status' => 'PAID',
+        'payment_mode' => 'CASH',
+        'items' => [['part_id' => $part->id, 'quantity' => 1]],
+    ])->assertCreated();
+
+    $this->actingAs($salesPerson)->postJson('/api/v1/stock/in', [
+        'part_id' => $part->id, 'quantity' => 5,
+    ])->assertStatus(403);
+
+    $this->actingAs($salesPerson)->postJson('/api/v1/stock/adjust', [
+        'part_id' => $part->id, 'quantity' => 1, 'reason' => 'test',
+    ])->assertStatus(403);
+
+    $this->actingAs($salesPerson)->postJson('/api/v1/qr/generate')->assertStatus(403);
+});
+
 it('refuses every protected route without an authenticated session', function () {
     $this->getJson('/api/v1/dashboard')->assertStatus(401);
     $this->getJson('/api/v1/parts')->assertStatus(401);

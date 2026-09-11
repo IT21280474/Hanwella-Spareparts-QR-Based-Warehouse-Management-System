@@ -26,6 +26,8 @@ class CreateOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.part_id' => ['required', 'integer', 'exists:parts,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.discount' => ['nullable', 'numeric', 'min:0'],
+            'items.*.note' => ['nullable', 'string', 'max:200'],
         ];
     }
 

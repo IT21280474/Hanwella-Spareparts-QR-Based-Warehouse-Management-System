@@ -4,6 +4,7 @@
  */
 export const queryKeys = {
   dashboard: () => ['dashboard'],
+  securityDashboard: () => ['dashboard', 'security'],
 
   parts: {
     all: () => ['parts'],

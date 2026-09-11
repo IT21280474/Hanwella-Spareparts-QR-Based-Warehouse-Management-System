@@ -23,7 +23,7 @@ class SalesOrder extends Model
     protected $fillable = [
         'order_no', 'customer_name', 'customer_phone', 'subtotal', 'discount',
         'total', 'paid_amount', 'payment_status', 'payment_mode', 'status',
-        'cashier_id', 'ordered_at',
+        'cashier_id', 'ordered_at', 'stock_deducted_at', 'dispatched_at', 'dispatched_by',
     ];
 
     protected function casts(): array
@@ -34,6 +34,8 @@ class SalesOrder extends Model
             'total' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'ordered_at' => 'datetime',
+            'stock_deducted_at' => 'datetime',
+            'dispatched_at' => 'datetime',
         ];
     }
 
@@ -45,6 +47,11 @@ class SalesOrder extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    public function dispatchedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dispatched_by');
     }
 
     public function getOutstandingAttribute(): float

@@ -27,4 +27,10 @@ export const ordersApi = {
     const { data, message } = await http.post(`/orders/${id}/cancel`, payload);
     return { order: data, message };
   },
+
+  /** Security's checkpoint: confirms a fully paid order's goods left. Does not move stock — that already happened at payment time. */
+  async dispatch(id) {
+    const { data, message } = await http.post(`/orders/${id}/dispatch`);
+    return { order: data, message };
+  },
 };

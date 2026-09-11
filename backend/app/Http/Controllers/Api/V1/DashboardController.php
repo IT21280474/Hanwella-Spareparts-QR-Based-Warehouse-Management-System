@@ -27,6 +27,8 @@ class DashboardController extends Controller
     private const WATCHLIST_LIMIT = 8;
     private const RECENT_ORDERS_LIMIT = 6;
     private const TOP_PARTS_LIMIT = 5;
+    private const READY_ORDERS_LIMIT = 8;
+    private const RECENT_DISPATCHES_LIMIT = 6;
 
     public function index(): JsonResponse
     {
@@ -42,6 +44,64 @@ class DashboardController extends Controller
             'recent_orders' => $this->recentOrders(),
             'alerts' => $this->alerts(),
         ], 'Dashboard summary retrieved successfully.');
+    }
+
+    /**
+     * Security's own overview — deliberately narrow. This role has no
+     * inventory/report access, so unlike index() above it never touches
+     * `parts` or `inventory` at all: just the paid orders it exists to gate.
+     */
+    public function security(): JsonResponse
+    {
+        $today = Carbon::today();
+
+        return ApiResponse::success([
+            'kpis' => $this->securityKpis($today),
+            'ready_orders' => $this->readyOrders(),
+            'recent_dispatches' => $this->recentDispatches(),
+        ], 'Dispatch summary retrieved successfully.');
+    }
+
+    private function securityKpis(Carbon $today): array
+    {
+        return [
+            'ready_for_dispatch' => SalesOrder::query()
+                ->where('payment_status', SalesOrder::PAID)
+                ->where('status', '!=', SalesOrder::CANCELLED)
+                ->whereNull('dispatched_at')
+                ->count(),
+            'dispatched_today' => SalesOrder::whereDate('dispatched_at', $today)->count(),
+            'dispatched_total' => SalesOrder::whereNotNull('dispatched_at')->count(),
+        ];
+    }
+
+    /** Oldest-paid-first, so the gate works through its queue in the order stock left the warehouse. */
+    private function readyOrders(): array
+    {
+        $orders = SalesOrder::query()
+            ->with('cashier:id,name')
+            ->withCount('items')
+            ->where('payment_status', SalesOrder::PAID)
+            ->where('status', '!=', SalesOrder::CANCELLED)
+            ->whereNull('dispatched_at')
+            ->orderBy('stock_deducted_at')
+            ->limit(self::READY_ORDERS_LIMIT)
+            ->get();
+
+        return SalesOrderResource::collection($orders)->resolve();
+    }
+
+    private function recentDispatches(): array
+    {
+        $orders = SalesOrder::query()
+            ->with(['cashier:id,name', 'dispatchedBy:id,name'])
+            ->withCount('items')
+            ->whereNotNull('dispatched_at')
+            ->orderByDesc('dispatched_at')
+            ->limit(self::RECENT_DISPATCHES_LIMIT)
+            ->get();
+
+        return SalesOrderResource::collection($orders)->resolve();
     }
 
     private function kpis(Carbon $today, Carbon $monthStart): array

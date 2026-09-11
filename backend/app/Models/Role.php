@@ -14,6 +14,8 @@ class Role extends Model
     public const ADMIN = 'ADMIN';
     public const MANAGER = 'MANAGER';
     public const WAREHOUSE_STAFF = 'WAREHOUSE_STAFF';
+    public const SALES_PERSON = 'SALES_PERSON';
+    public const SECURITY = 'SECURITY';
     public const VIEWER = 'VIEWER';
 
     protected $fillable = ['slug', 'name', 'description'];
